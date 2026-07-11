@@ -74,6 +74,7 @@ auth → rate-limit → cost-cap → load agent version → guardrails(pre)
 | GET  | `/v1/agents` | List agents |
 | POST | `/v1/agents/{id}/versions` | New immutable version |
 | POST | `/v1/agents/{id}/run` | Run — returns output + `trace_id` |
+| POST | `/v1/agents/{id}/run/stream` | Streaming run (SSE): `meta → provider → delta* → [blocked] → done` |
 | GET  | `/v1/runs/{id}` | Run + full trace tree |
 | GET  | `/v1/traces/{trace_id}` | Trace by id |
 | POST | `/v1/evals/run` | Run an eval set (used by CI) |
@@ -125,12 +126,15 @@ The default backends are SQLite + in-memory span store + in-memory rate limiter.
 To exercise the PRD's three-store architecture:
 
 ```bash
-docker compose up -d
-export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5432/sentinel
+docker compose up -d      # host ports 5433 (pg) / 27017 (mongo) / 6380 (redis)
+export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5433/sentinel
 export SPAN_STORE=mongo   MONGO_URL=mongodb://localhost:27017
-export RATE_LIMITER=redis REDIS_URL=redis://localhost:6379/0
+export RATE_LIMITER=redis REDIS_URL=redis://localhost:6380/0
 # pip install "psycopg[binary]" pymongo redis
 ```
+
+Verified end-to-end: runs land in Postgres, spans are served from Mongo, and
+the per-tenant rate-limit window lives in Redis.
 
 Each swap is a config change — no code changes. See [`.env.example`](.env.example).
 
@@ -144,8 +148,21 @@ queue) · Cost attribution · Next.js dashboard (runs, trace view, playground,
 approvals, cost, audit) · Load test (`python -m scripts.load_test` — gateway
 overhead p95 ≈ 24 ms vs the < 50 ms PRD target, concurrency 20, SQLite/WAL).
 
-**Deliberately later:** streaming responses (PRD open question Q1) and the
-Postgres/Mongo/Redis deployment (drop-in via env today). See Q1–Q4 in the PRD.
+## Streaming and guardrails (PRD open question Q1)
+
+`POST /v1/agents/{id}/run/stream` answers Q1 like this:
+
+- **Pre-call guardrails run before any token is emitted** — a blocked input
+  returns a plain JSON block response; no stream opens.
+- **Post-call guardrails run incrementally** over the accumulated output while
+  the last 96 chars are withheld from emission. When a leak pattern completes,
+  the stream is cut and the withheld tail is never sent. This is best-effort by
+  construction (a pattern longer than the hold window can partially escape), so
+  the full post-pass is still recorded on the trace and audit log with
+  `chars_emitted` for exposure accounting.
+- **HITL and streaming don't compose** — you can't un-send tokens — so agents
+  with `hitl_approval` get a 409 on the stream endpoint and must use the
+  buffered endpoint.
 
 ## HITL approval queue
 

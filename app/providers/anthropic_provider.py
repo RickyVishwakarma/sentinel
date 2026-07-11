@@ -45,3 +45,17 @@ class AnthropicProvider(Provider):
             input_tokens=getattr(usage, "input_tokens", _estimate_tokens(system + prompt)),
             output_tokens=getattr(usage, "output_tokens", _estimate_tokens(text)),
         )
+
+    def stream_generate(self, *, system: str, prompt: str, model: str):
+        """Native token streaming via the SDK's streaming helper."""
+        from anthropic import Anthropic
+
+        client = Anthropic(api_key=self._key)
+        with client.messages.stream(
+            model=model or self._default_model,
+            max_tokens=16000,
+            thinking={"type": "adaptive"},
+            system=system or None,
+            messages=[{"role": "user", "content": prompt}],
+        ) as stream:
+            yield from stream.text_stream

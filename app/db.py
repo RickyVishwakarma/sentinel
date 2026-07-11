@@ -14,12 +14,18 @@ from app.config import get_settings
 
 _settings = get_settings()
 
-_is_sqlite = _settings.database_url.startswith("sqlite")
+# PaaS hosts (Render, Heroku) hand out postgres:// URLs; SQLAlchemy needs an
+# explicit driver scheme.
+_db_url = _settings.database_url
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+psycopg://", 1)
+
+_is_sqlite = _db_url.startswith("sqlite")
 
 # check_same_thread is a SQLite-only knob; harmless to pass only when relevant.
 _connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
-engine = create_engine(_settings.database_url, connect_args=_connect_args, future=True)
+engine = create_engine(_db_url, connect_args=_connect_args, future=True)
 
 if _is_sqlite:
     # WAL lets readers and a writer proceed concurrently; NORMAL fsync is safe

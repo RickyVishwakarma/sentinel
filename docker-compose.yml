@@ -3,9 +3,12 @@
 # matching env vars at it to exercise the PRD's three-store architecture.
 #
 #   docker compose up -d
-#   export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5432/sentinel
+#   export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5433/sentinel
 #   export SPAN_STORE=mongo MONGO_URL=mongodb://localhost:27017
-#   export RATE_LIMITER=redis REDIS_URL=redis://localhost:6379/0
+#   export RATE_LIMITER=redis REDIS_URL=redis://localhost:6380/0
+#
+# Host ports 5433/6380 are used (not the defaults) so this stack coexists with
+# other local Postgres/Redis containers.
 
 services:
   postgres:
@@ -15,7 +18,7 @@ services:
       POSTGRES_PASSWORD: sentinel
       POSTGRES_DB: sentinel
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   mongo:
     image: mongo:7
@@ -25,4 +28,4 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "6380:6379"

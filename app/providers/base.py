@@ -28,6 +28,22 @@ class Provider:
     def generate(self, *, system: str, prompt: str, model: str) -> ProviderResult:
         raise NotImplementedError
 
+    def stream_generate(self, *, system: str, prompt: str, model: str):
+        """Yield output text chunks. Default: pseudo-stream the full response.
+
+        Providers with native streaming (Anthropic) override this; the rest
+        chunk their complete() output so the fallback chain keeps identical
+        semantics in streaming mode.
+        """
+        result = self.generate(system=system, prompt=prompt, model=model)
+        words = result.output.split(" ")
+        step = 6
+        for i in range(0, len(words), step):
+            chunk = " ".join(words[i : i + step])
+            if i + step < len(words):
+                chunk += " "
+            yield chunk
+
 
 def _estimate_tokens(text: str) -> int:
     """Rough token estimate (~4 chars/token) for providers that don't report usage."""

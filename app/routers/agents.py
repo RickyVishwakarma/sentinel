@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, require_role
 from app.db import get_db
-from app.gateway import GatewayError, execute_run
+from app.gateway import GatewayError, execute_run, stream_run
 from app.models import Agent, AgentVersion, User
 from app.schemas import (
     AgentCreate,
@@ -111,3 +114,39 @@ def run_agent(
     except GatewayError as exc:
         raise HTTPException(exc.status_code, exc.detail)
     return RunResponse(**result)
+
+
+@router.post("/{agent_id}/run/stream")
+def run_agent_stream(
+    agent_id: str,
+    body: RunRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Streaming run (SSE): meta → provider → delta* → [blocked] → done.
+
+    A pre-call guardrail block returns a plain JSON RunResponse instead of a
+    stream — nothing was generated, so there is nothing to stream.
+    """
+    agent = _get_agent(db, agent_id, user)
+    version = agent.versions[-1]
+    try:
+        kind, payload = stream_run(
+            db,
+            user=user,
+            agent=agent,
+            version=version,
+            input_text=body.input,
+            requested_tools=body.requested_tools,
+        )
+    except GatewayError as exc:
+        raise HTTPException(exc.status_code, exc.detail)
+
+    if kind == "blocked":
+        return JSONResponse(payload)
+
+    def sse():
+        for ev in payload:
+            yield f"event: {ev['event']}\ndata: {json.dumps(ev['data'])}\n\n"
+
+    return StreamingResponse(sse(), media_type="text/event-stream")

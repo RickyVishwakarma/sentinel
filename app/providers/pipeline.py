@@ -52,3 +52,37 @@ def run_with_fallback(
 
     # Unreachable: template is always available. Guard anyway.
     raise RuntimeError("no provider produced a result")
+
+
+def stream_with_fallback(*, chain: list[str], system: str, prompt: str, model: str):
+    """Streaming variant of the fallback walk.
+
+    Yields ``("provider", {"provider": id, "attempts": [...]})`` exactly once —
+    after the chosen provider produced its first chunk — then ``("delta", str)``
+    for each chunk. Fallback only happens *before* the first chunk; once tokens
+    have been emitted the stream is committed to that provider.
+    """
+    ordered = [pid for pid in chain if pid in _REGISTRY]
+    if "template" not in ordered:
+        ordered.append("template")
+
+    attempts: list[dict] = []
+    for pid in ordered:
+        provider = _REGISTRY[pid]
+        if not provider.available():
+            attempts.append({"provider": pid, "status": "skipped", "reason": "not_configured"})
+            continue
+        try:
+            gen = provider.stream_generate(system=system, prompt=prompt, model=model)
+            first = next(gen, None)  # provider errors surface here, pre-emission
+        except Exception as exc:  # noqa: BLE001 — any provider error falls through
+            attempts.append({"provider": pid, "status": "error", "reason": str(exc)[:200]})
+            continue
+        attempts.append({"provider": pid, "status": "ok", "streamed": True})
+        yield ("provider", {"provider": pid, "attempts": attempts})
+        if first is not None:
+            yield ("delta", first)
+            yield from (("delta", chunk) for chunk in gen)
+        return
+
+    raise RuntimeError("no provider produced a result")
