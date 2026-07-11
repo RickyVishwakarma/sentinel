@@ -1,0 +1,40 @@
+name: eval-gate
+
+# Blocks the build when an eval metric regresses below baseline (Module M5).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Start gateway + seed
+        run: |
+          python -m app.seed
+          uvicorn app.main:app --port 8000 &
+          for i in $(seq 1 20); do
+            curl -sf localhost:8000/health && break || sleep 1
+          done
+
+      - name: Eval regression gate
+        run: |
+          AGENT_ID=$(curl -s localhost:8000/v1/agents \
+            -H "Authorization: Bearer sentinel-demo-key" | python -c "import sys,json;print(json.load(sys.stdin)[0]['id'])")
+          python -m cli.eval_runner \
+            --url http://localhost:8000 \
+            --api-key sentinel-demo-key \
+            --agent-id "$AGENT_ID" \
+            --file evals/support-bot.json

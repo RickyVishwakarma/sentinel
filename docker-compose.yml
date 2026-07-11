@@ -1,0 +1,28 @@
+# Optional production-shaped infra. The app runs fine WITHOUT this (SQLite +
+# in-memory span store + in-memory rate limiter). Bring this up and point the
+# matching env vars at it to exercise the PRD's three-store architecture.
+#
+#   docker compose up -d
+#   export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5432/sentinel
+#   export SPAN_STORE=mongo MONGO_URL=mongodb://localhost:27017
+#   export RATE_LIMITER=redis REDIS_URL=redis://localhost:6379/0
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: sentinel
+      POSTGRES_DB: sentinel
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
