@@ -3,7 +3,8 @@
   "baseline": {
     "answer_relevance": 0.3,
     "faithfulness": 0.05,
-    "guardrail_pass_rate": 0.9
+    "guardrail_pass_rate": 0.9,
+    "llm_judge": 0.5
   },
   "cases": [
     {

@@ -7,17 +7,30 @@ Postgres for production — no code changes needed.
 
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
 
 _settings = get_settings()
 
+_is_sqlite = _settings.database_url.startswith("sqlite")
+
 # check_same_thread is a SQLite-only knob; harmless to pass only when relevant.
-_connect_args = {"check_same_thread": False} if _settings.database_url.startswith("sqlite") else {}
+_connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
 engine = create_engine(_settings.database_url, connect_args=_connect_args, future=True)
+
+if _is_sqlite:
+    # WAL lets readers and a writer proceed concurrently; NORMAL fsync is safe
+    # with WAL and removes most write-lock stalls under concurrent gateway load.
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _record):  # pragma: no cover
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA synchronous=NORMAL")
+        cur.execute("PRAGMA busy_timeout=5000")
+        cur.close()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
 

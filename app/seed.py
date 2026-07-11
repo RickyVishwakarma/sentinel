@@ -45,7 +45,7 @@ def seed() -> None:
                     model="claude-opus-4-8",
                     system_prompt="You are a concise, friendly customer-support assistant.",
                     tools=["search_docs"],
-                    guardrails=["pii_redaction", "prompt_injection", "output_blocklist"],
+                    guardrails=["pii_redaction", "prompt_injection", "output_blocklist", "hitl_approval"],
                     fallback_chain=["anthropic", "openai", "gemini"],
                 )
             )

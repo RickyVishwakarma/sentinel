@@ -106,6 +106,29 @@ class AuditLog(Base):
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
 
 
+class Approval(Base):
+    """Human-in-the-loop queue item (Module M6).
+
+    Created when a run trips a flag-level guardrail on an agent that has the
+    ``hitl_approval`` guardrail enabled. The run's output is withheld here until
+    an admin approves (releases it) or denies it.
+    """
+
+    __tablename__ = "approvals"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), index=True)
+    trace_id: Mapped[str] = mapped_column(String, index=True)
+    reason: Mapped[list] = mapped_column(JSON, default=list)  # flag violations
+    held_output: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[str] = mapped_column(String, default="pending", index=True)  # pending | approved | denied
+    decided_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    note: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class EvalResult(Base):
     __tablename__ = "eval_results"
 

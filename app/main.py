@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.config import get_settings
 from app.db import init_db
-from app.routers import agents, audit, cost, evals, runs
+from app.routers import agents, approvals, audit, cost, evals, runs
 
 
 @asynccontextmanager
@@ -34,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(agents.router)
+app.include_router(approvals.router)
 app.include_router(runs.router)
 app.include_router(evals.router)
 app.include_router(cost.router)
@@ -53,6 +54,6 @@ def root() -> dict:
         "docs": "/docs",
         "modules": [
             "agent-registry", "gateway", "guardrails", "observability",
-            "eval-harness", "governance", "cost-attribution",
+            "eval-harness", "governance", "cost-attribution", "hitl-approvals",
         ],
     }

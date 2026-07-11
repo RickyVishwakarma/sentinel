@@ -21,13 +21,17 @@ from sqlalchemy.orm import Session
 
 from app.cost import cost_usd
 from app.guardrails import run_post_guardrails, run_pre_guardrails
-from app.models import Agent, AgentVersion, AuditLog, Run, User
+from app.models import Agent, AgentVersion, Approval, AuditLog, Run, User
 from app.providers import run_with_fallback
 from app.ratelimit import get_rate_limiter
 from app.spans import SpanRecord, get_span_store
 from app.config import get_settings
 
 _BLOCKED_MESSAGE = "This request was blocked by a Sentinel guardrail."
+_HELD_MESSAGE = (
+    "This response was flagged as risky and is held for human approval. "
+    "An admin can release it from the approval queue."
+)
 
 
 class GatewayError(Exception):
@@ -192,6 +196,28 @@ def execute_run(
     run.cost = cost
     run.latency_ms = int((time.perf_counter() - t0) * 1000)
 
+    # 7. Human-in-the-loop hold (Module M6): flag-level violations on an agent
+    # with hitl_approval enabled withhold the output until an admin decides.
+    approval_id: str | None = None
+    flags = [v for v in violations if v.get("action") == "flag"]
+    if run.status == "ok" and flags and "hitl_approval" in version.guardrails:
+        run.status = "pending_approval"
+        approval = Approval(
+            id=uuid.uuid4().hex,
+            tenant_id=user.tenant_id,
+            run_id=run.id,
+            trace_id=trace_id,
+            reason=flags,
+            held_output=output_text,
+        )
+        db.add(approval)
+        approval_id = approval.id
+        output_text = _HELD_MESSAGE
+        _audit(
+            db, user.tenant_id, "system", "hitl.hold", run.id,
+            {"approval_id": approval.id, "violations": flags},
+        )
+
     db.add(run)
     _audit(
         db, user.tenant_id, user.id, "run.complete", run.id,
@@ -199,7 +225,7 @@ def execute_run(
     )
     db.commit()
 
-    # 7. Emit trace (best-effort, after the response is finalized).
+    # 8. Emit trace (best-effort, after the response is finalized).
     get_span_store().write(spans)
 
     return {
@@ -207,4 +233,5 @@ def execute_run(
         "provider": result.provider, "output": output_text,
         "total_tokens": result.total_tokens, "cost": cost,
         "latency_ms": run.latency_ms, "violations": violations,
+        "approval_id": approval_id,
     }

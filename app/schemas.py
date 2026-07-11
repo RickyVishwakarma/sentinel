@@ -42,13 +42,19 @@ class RunRequest(BaseModel):
 class RunResponse(BaseModel):
     run_id: str
     trace_id: str
-    status: str            # ok | blocked | error
+    status: str            # ok | blocked | pending_approval | denied | error
     provider: str | None
     output: str
     total_tokens: int
     cost: float
     latency_ms: int
     violations: list[dict] = Field(default_factory=list)
+    approval_id: str | None = None  # set when the output is held for HITL approval
+
+
+class ApprovalDecision(BaseModel):
+    decision: str          # "approve" | "deny"
+    note: str = ""
 
 
 class EvalCase(BaseModel):

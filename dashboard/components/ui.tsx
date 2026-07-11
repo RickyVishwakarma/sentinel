@@ -10,6 +10,10 @@ export function StatusPill({ status }: { status: string }) {
     ok: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     blocked: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     error: "bg-red-500/10 text-red-400 border-red-500/30",
+    pending_approval: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+    pending: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+    approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    denied: "bg-red-500/10 text-red-400 border-red-500/30",
   };
   return (
     <span
@@ -64,6 +68,7 @@ export function Loading() {
 const NAV = [
   { href: "/", label: "Runs" },
   { href: "/agents", label: "Agents" },
+  { href: "/approvals", label: "Approvals" },
   { href: "/cost", label: "Cost" },
   { href: "/audit", label: "Audit" },
 ];

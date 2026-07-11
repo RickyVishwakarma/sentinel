@@ -77,6 +77,8 @@ auth → rate-limit → cost-cap → load agent version → guardrails(pre)
 | GET  | `/v1/runs/{id}` | Run + full trace tree |
 | GET  | `/v1/traces/{trace_id}` | Trace by id |
 | POST | `/v1/evals/run` | Run an eval set (used by CI) |
+| GET  | `/v1/approvals` | HITL queue (flagged runs holding output) |
+| POST | `/v1/approvals/{id}/decide` | Approve / deny a held run (admin) |
 | GET  | `/v1/cost?from=&to=` | Cost per agent for the tenant |
 | GET  | `/v1/audit` | Audit log |
 
@@ -134,15 +136,25 @@ Each swap is a config change — no code changes. See [`.env.example`](.env.exam
 
 ## What's here vs. the full PRD
 
-**Built (Weeks 1–2):** Agent Registry with immutable versioning · Gateway
+**Built (Weeks 1–3):** Agent Registry with immutable versioning · Gateway
 (routing, provider fallback, rate-limit, cost-cap) · Guardrails (pre + post) ·
-Observability (spans + trace tree) · Eval harness + CI gate · Governance (RBAC +
-audit log) · Cost attribution · Next.js dashboard (runs, trace view, playground,
-cost, audit).
+Observability (spans + trace tree) · Eval harness + CI gate (+ LLM-judge metric
+when an Anthropic key is set) · Governance (RBAC + audit log + HITL approval
+queue) · Cost attribution · Next.js dashboard (runs, trace view, playground,
+approvals, cost, audit) · Load test (`python -m scripts.load_test` — gateway
+overhead p95 ≈ 24 ms vs the < 50 ms PRD target, concurrency 20, SQLite/WAL).
 
-**Deliberately later (Week 3):** human-in-the-loop approval queue, LLM-judge
-eval metric, streaming responses, load test, and the Postgres/Mongo/Redis
-deployment (drop-in via env today). See open questions Q1–Q4 in the PRD.
+**Deliberately later:** streaming responses (PRD open question Q1) and the
+Postgres/Mongo/Redis deployment (drop-in via env today). See Q1–Q4 in the PRD.
+
+## HITL approval queue
+
+Flag-level guardrail hits (e.g. PII redaction) on an agent with the
+`hitl_approval` guardrail enabled complete the LLM call but **withhold the
+output**: the run returns `status: pending_approval` plus an `approval_id`, and
+the output sits in the queue until an admin approves (run becomes `ok`, output
+released) or denies it. Decide from the dashboard's **Approvals** page or via
+`POST /v1/approvals/{id}/decide`.
 
 ## Layout
 

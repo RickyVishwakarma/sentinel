@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.gateway import GatewayError, execute_run
+from app.judge import judge_available, judge_score
 from app.models import Agent, AgentVersion, EvalResult, User
 
 _WORD = re.compile(r"[a-z0-9]+")
@@ -42,10 +43,11 @@ class CaseResult:
     answer_relevance: float | None  # None for expect_blocked cases (not scored)
     faithfulness: float | None
     guardrail_pass: bool
+    llm_judge: float | None = None      # None when no judge model is configured
+    judge_reason: str = ""
 
 
-def _baselines(baseline: float | dict) -> dict[str, float]:
-    metrics = ("answer_relevance", "faithfulness", "guardrail_pass_rate")
+def _baselines(baseline: float | dict, metrics: tuple[str, ...]) -> dict[str, float]:
     if isinstance(baseline, dict):
         return {m: float(baseline.get(m, 0.0)) for m in metrics}
     return {m: float(baseline) for m in metrics}
@@ -82,6 +84,8 @@ def run_eval(
 
         # A case that SHOULD be blocked (injection probe) passes when it IS
         # blocked; quality metrics don't apply to it — there's no answer to score.
+        judge = None
+        judge_reason = ""
         if expect_blocked:
             guardrail_pass = status == "blocked"
             relevance = faithfulness = None
@@ -91,6 +95,10 @@ def run_eval(
             relevance = round(_overlap(output, expected or case["input"]), 4)
             # faithfulness: is the output grounded in the expected answer (no drift)?
             faithfulness = round(_overlap(expected, output), 4) if expected else relevance
+            if judge_available():
+                scored = judge_score(case["input"], expected, output)
+                if scored is not None:
+                    judge, judge_reason = round(scored[0], 4), scored[1]
 
         case_results.append(
             CaseResult(
@@ -101,6 +109,8 @@ def run_eval(
                 answer_relevance=relevance,
                 faithfulness=faithfulness,
                 guardrail_pass=guardrail_pass,
+                llm_judge=judge,
+                judge_reason=judge_reason,
             )
         )
 
@@ -112,8 +122,11 @@ def run_eval(
         "faithfulness": round(sum(c.faithfulness for c in scored) / n_scored, 4),
         "guardrail_pass_rate": round(sum(c.guardrail_pass for c in case_results) / n_all, 4),
     }
+    judged = [c.llm_judge for c in scored if c.llm_judge is not None]
+    if judged:
+        metrics["llm_judge"] = round(sum(judged) / len(judged), 4)
 
-    baselines = _baselines(baseline)
+    baselines = _baselines(baseline, tuple(metrics))
     passed_all = True
     for metric, score in metrics.items():
         passed = score >= baselines[metric]
