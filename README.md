@@ -99,6 +99,18 @@ non-zero if any metric drops below the baseline. Wired into
 [`.github/workflows/eval-gate.yml`](.github/workflows/eval-gate.yml) so a prompt
 change that regresses fails the build.
 
+## Dashboard
+
+A Next.js console over the gateway — run list with metrics, expandable trace
+tree per run, an agents playground (fire runs from the browser), cost
+attribution with cap usage, and the audit log.
+
+```bash
+cd dashboard
+npm install
+npm run dev        # http://localhost:3000 (gateway URL + API key configurable in the top bar)
+```
+
 ## Tests
 
 ```bash
@@ -122,13 +134,14 @@ Each swap is a config change — no code changes. See [`.env.example`](.env.exam
 
 ## What's here vs. the full PRD
 
-**Built (Week 1):** Agent Registry with immutable versioning · Gateway (routing,
-provider fallback, rate-limit, cost-cap) · Guardrails (pre + post) · Observability
-(spans + trace tree) · Eval harness + CI gate · Governance (RBAC + audit log) ·
-Cost attribution.
+**Built (Weeks 1–2):** Agent Registry with immutable versioning · Gateway
+(routing, provider fallback, rate-limit, cost-cap) · Guardrails (pre + post) ·
+Observability (spans + trace tree) · Eval harness + CI gate · Governance (RBAC +
+audit log) · Cost attribution · Next.js dashboard (runs, trace view, playground,
+cost, audit).
 
-**Deliberately later:** Next.js dashboard (Week 2), human-in-the-loop approval
-queue, LLM-judge eval metric, streaming responses, and the Postgres/Mongo/Redis
+**Deliberately later (Week 3):** human-in-the-loop approval queue, LLM-judge
+eval metric, streaming responses, load test, and the Postgres/Mongo/Redis
 deployment (drop-in via env today). See open questions Q1–Q4 in the PRD.
 
 ## Layout
@@ -149,4 +162,5 @@ app/
   routers/           agents, runs, evals, cost, audit
 cli/eval_runner.py   CI regression gate
 tests/               guardrail unit tests + gateway E2E
+dashboard/           Next.js console: runs, trace tree, playground, cost, audit
 ```

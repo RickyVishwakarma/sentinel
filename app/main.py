@@ -5,8 +5,10 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.config import get_settings
 from app.db import init_db
 from app.routers import agents, audit, cost, evals, runs
 
@@ -22,6 +24,13 @@ app = FastAPI(
     version=__version__,
     summary="Deploy, govern, observe, and evaluate LLM agents in production.",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(agents.router)

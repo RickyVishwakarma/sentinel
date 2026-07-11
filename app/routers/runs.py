@@ -27,6 +27,22 @@ def _run_dict(run: Run) -> dict:
     }
 
 
+@router.get("/runs")
+def list_runs(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+) -> list[dict]:
+    runs = (
+        db.query(Run)
+        .filter(Run.tenant_id == user.tenant_id)
+        .order_by(Run.created_at.desc())
+        .limit(max(1, min(limit, 200)))
+        .all()
+    )
+    return [_run_dict(r) for r in runs]
+
+
 @router.get("/runs/{run_id}")
 def get_run(
     run_id: str, db: Session = Depends(get_db), user: User = Depends(current_user)

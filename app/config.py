@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     gemini_model: str = "gemini-1.5-flash"
 
+    # Dashboard origin(s) allowed to call the API from the browser
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3300"]
+
 
 @lru_cache
 def get_settings() -> Settings:

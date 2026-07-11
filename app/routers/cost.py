@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,7 @@ def _parse(ts: str | None, default: datetime) -> datetime:
 
 @router.get("/cost")
 def get_cost(
-    from_: str | None = None,
+    from_: str | None = Query(None, alias="from"),
     to: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
