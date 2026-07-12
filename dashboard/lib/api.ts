@@ -144,4 +144,98 @@ export interface RunResponse {
   cost: number;
   latency_ms: number;
   violations: Record<string, unknown>[];
+  approval_id?: string | null;
+}
+
+export interface EvalHistoryEntry {
+  id: string;
+  version: number;
+  eval_set: string;
+  metric: string;
+  score: number;
+  baseline: number;
+  passed: boolean;
+  created_at: string | null;
+}
+
+export interface StreamCallbacks {
+  onMeta?: (d: { run_id: string; trace_id: string }) => void;
+  onProvider?: (provider: string) => void;
+  onDelta?: (text: string) => void;
+  onBlocked?: (d: { message: string; violations: unknown[] }) => void;
+  onDone?: (d: {
+    run_id: string;
+    trace_id: string;
+    status: string;
+    provider: string | null;
+    total_tokens: number;
+    cost: number;
+    latency_ms: number;
+    violations: Record<string, unknown>[];
+  }) => void;
+}
+
+/** Drive the SSE streaming endpoint. Returns "streamed" after a completed
+ *  stream, or a full RunResponse when the gateway answered with plain JSON
+ *  (pre-call guardrail block, or the HITL 409 → buffered-endpoint fallback). */
+export async function streamRun(
+  agentId: string,
+  input: string,
+  cb: StreamCallbacks,
+): Promise<"streamed" | RunResponse> {
+  const res = await fetch(`${apiUrl()}/v1/agents/${agentId}/run/stream`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ input }),
+  });
+
+  // HITL agents can't stream (409) — fall back to the buffered endpoint.
+  if (res.status === 409) {
+    return apiFetch<RunResponse>(`/v1/agents/${agentId}/run`, {
+      method: "POST",
+      body: JSON.stringify({ input }),
+    });
+  }
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      detail = (await res.json()).detail ?? detail;
+    } catch {}
+    throw new Error(`${res.status}: ${detail}`);
+  }
+  if ((res.headers.get("content-type") ?? "").includes("application/json")) {
+    return (await res.json()) as RunResponse; // pre-call guardrail block
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let sep;
+    while ((sep = buf.indexOf("\n\n")) >= 0) {
+      const block = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+      const lines = block.split("\n");
+      const event = lines[0]?.replace(/^event: /, "");
+      let data: never;
+      try {
+        data = JSON.parse(lines[1]?.replace(/^data: /, "") ?? "{}") as never;
+      } catch {
+        continue;
+      }
+      if (event === "meta") cb.onMeta?.(data);
+      else if (event === "provider")
+        cb.onProvider?.((data as { provider: string }).provider);
+      else if (event === "delta") cb.onDelta?.((data as { text: string }).text);
+      else if (event === "blocked") cb.onBlocked?.(data);
+      else if (event === "done") cb.onDone?.(data);
+    }
+  }
+  return "streamed";
 }

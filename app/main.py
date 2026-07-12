@@ -10,12 +10,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.config import get_settings
 from app.db import init_db
-from app.routers import agents, approvals, audit, cost, evals, runs
+from app.routers import admin, agents, approvals, audit, cost, evals, runs, tenant
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    # Retention sweep (PRD Q3) — best-effort; a failing span store must not
+    # keep the gateway from starting.
+    try:
+        from app.spans import get_span_store
+
+        get_span_store().purge_expired()
+    except Exception:  # noqa: BLE001
+        pass
     yield
 
 
@@ -39,6 +47,8 @@ app.include_router(runs.router)
 app.include_router(evals.router)
 app.include_router(cost.router)
 app.include_router(audit.router)
+app.include_router(tenant.router)
+app.include_router(admin.router)
 
 
 @app.get("/health", tags=["meta"])

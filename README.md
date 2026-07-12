@@ -148,6 +148,29 @@ queue) · Cost attribution · Next.js dashboard (runs, trace view, playground,
 approvals, cost, audit) · Load test (`python -m scripts.load_test` — gateway
 overhead p95 ≈ 24 ms vs the < 50 ms PRD target, concurrency 20, SQLite/WAL).
 
+## PRD open questions — answers implemented
+
+**Q2 — cost cap hit mid-month.** The policy belongs to the **tenant admin**
+(`PATCH /v1/tenant`, admin role): `cost_cap_mode` is `block` (402 on every
+further run — default), `warn` (runs proceed; every response and the audit log
+carry a `cost_cap` warning), or `degrade` (runs proceed on the free template
+provider only). Every mode writes an audit entry.
+
+**Q3 — trace retention & PII at rest.** Span inputs/outputs are PII-redacted
+**before persistence** (`REDACT_SPANS_AT_REST`, on by default — the live
+response is unaffected; only the stored copy is scrubbed). Spans older than
+`TRACE_RETENTION_DAYS` (default 30) are deleted by a startup sweep and by
+`POST /v1/admin/traces/purge`; runs are kept as billing records.
+
+**Q4 — path to enterprise readiness.** Not a v1 code problem; the sequencing
+is: (1) SSO/OIDC in front of the existing RBAC — API keys stay for
+machine-to-machine, humans get SSO via the dashboard; (2) SOC 2 — the audit
+log, retention policy, and RBAC built here are the control evidence, so the
+work is process + an auditor, not architecture; (3) multi-region — the gateway
+is stateless (Postgres/Mongo/Redis hold all state), so region expansion is a
+deployment topology change (regional gateway + read replicas) rather than a
+rewrite. Becomes gating at the first enterprise design partner, not before.
+
 ## Streaming and guardrails (PRD open question Q1)
 
 `POST /v1/agents/{id}/run/stream` answers Q1 like this:

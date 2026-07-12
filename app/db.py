@@ -58,3 +58,27 @@ def init_db() -> None:
     from app import models  # noqa: F401  (registers mappers)
 
     Base.metadata.create_all(bind=engine)
+    _apply_mini_migrations()
+
+
+def _apply_mini_migrations() -> None:
+    """Additive column migrations for existing databases.
+
+    create_all() only creates missing tables — it never alters existing ones.
+    Until the project adopts Alembic, columns added to a shipped table are
+    listed here and applied with a plain ADD COLUMN when absent.
+    """
+    from sqlalchemy import inspect, text
+
+    additions = {
+        "tenants": [("cost_cap_mode", "VARCHAR DEFAULT 'block'")],
+    }
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for table, columns in additions.items():
+            if table not in inspector.get_table_names():
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            for name, ddl in columns:
+                if name not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))

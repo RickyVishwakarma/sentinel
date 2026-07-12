@@ -31,6 +31,11 @@ class Tenant(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     plan: Mapped[str] = mapped_column(String, default="free")
     monthly_cost_cap: Mapped[float] = mapped_column(Float, default=50.0)  # USD
+    # PRD Q2 — what happens when the cap is hit mid-month (tenant admin's call):
+    #   block   → 402 on every further run (default)
+    #   warn    → runs proceed, each response carries a cost_cap warning + audit
+    #   degrade → runs proceed on the cheapest provider (template) only
+    cost_cap_mode: Mapped[str] = mapped_column(String, default="block")
 
     users: Mapped[list[User]] = relationship(back_populates="tenant")
     agents: Mapped[list[Agent]] = relationship(back_populates="tenant")

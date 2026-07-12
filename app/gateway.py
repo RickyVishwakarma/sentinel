@@ -60,6 +60,37 @@ def _month_to_date_cost(db: Session, tenant_id: str) -> float:
     return float(total or 0.0)
 
 
+def _apply_cost_cap(
+    db: Session, *, user: User, agent: Agent, chain: list[str], violations: list[dict]
+) -> list[str]:
+    """PRD Q2: enforce the tenant's cost-cap policy when the cap is reached.
+
+    Returns the (possibly degraded) fallback chain; raises GatewayError in
+    block mode. The mode is the tenant admin's choice (see /v1/tenant).
+    """
+    if _month_to_date_cost(db, user.tenant_id) < user.tenant.monthly_cost_cap:
+        return chain
+
+    mode = getattr(user.tenant, "cost_cap_mode", None) or "block"
+    if mode == "warn":
+        violations.append({
+            "guardrail": "cost_cap", "action": "warn",
+            "detail": f"monthly cost cap ${user.tenant.monthly_cost_cap} reached; mode=warn",
+        })
+        _audit(db, user.tenant_id, "system", "costcap.warn", agent.id, {"mode": "warn"})
+        return chain
+    if mode == "degrade":
+        violations.append({
+            "guardrail": "cost_cap", "action": "degrade",
+            "detail": "monthly cost cap reached; degraded to the free template provider",
+        })
+        _audit(db, user.tenant_id, "system", "costcap.degrade", agent.id, {"mode": "degrade"})
+        return ["template"]
+    _audit(db, user.tenant_id, user.id, "costcap.block", agent.id, {"mode": "block"})
+    db.commit()
+    raise GatewayError(402, "monthly cost cap reached")
+
+
 def execute_run(
     db: Session,
     *,
@@ -96,11 +127,11 @@ def execute_run(
         db.commit()
         raise GatewayError(429, "rate limit exceeded")
 
-    # 2. Cost cap (per tenant, month-to-date).
-    if _month_to_date_cost(db, user.tenant_id) >= user.tenant.monthly_cost_cap:
-        _audit(db, user.tenant_id, user.id, "costcap.block", agent.id, {})
-        db.commit()
-        raise GatewayError(402, "monthly cost cap reached")
+    # 2. Cost cap (per tenant, month-to-date) — policy is the tenant's (PRD Q2).
+    violations: list[dict] = []
+    chain = _apply_cost_cap(
+        db, user=user, agent=agent, chain=version.fallback_chain, violations=violations
+    )
 
     span(trace_id=trace_id, type="prompt", name="input", input=input_text)
 
@@ -111,7 +142,7 @@ def execute_run(
         requested_tools=requested_tools,
         allowed_tools=version.tools,
     )
-    violations = [v.__dict__ for v in pre.violations]
+    violations.extend(v.__dict__ for v in pre.violations)
     span(
         trace_id=trace_id,
         type="guardrail",
@@ -139,10 +170,10 @@ def execute_run(
             "violations": violations,
         }
 
-    # 4. LLM call with provider fallback.
+    # 4. LLM call with provider fallback (chain may be cost-cap degraded).
     llm_t0 = time.perf_counter()
     outcome = run_with_fallback(
-        chain=version.fallback_chain,
+        chain=chain,
         system=version.system_prompt,
         prompt=pre.text,
         model=version.model,
@@ -284,10 +315,10 @@ def stream_run(
         db.commit()
         raise GatewayError(429, "rate limit exceeded")
 
-    if _month_to_date_cost(db, user.tenant_id) >= user.tenant.monthly_cost_cap:
-        _audit(db, user.tenant_id, user.id, "costcap.block", agent.id, {})
-        db.commit()
-        raise GatewayError(402, "monthly cost cap reached")
+    violations: list[dict] = []
+    chain = _apply_cost_cap(
+        db, user=user, agent=agent, chain=version.fallback_chain, violations=violations
+    )
 
     run = Run(
         id=uuid.uuid4().hex,
@@ -315,7 +346,7 @@ def stream_run(
         requested_tools=requested_tools,
         allowed_tools=version.tools,
     )
-    violations = [v.__dict__ for v in pre.violations]
+    violations.extend(v.__dict__ for v in pre.violations)
     span(
         trace_id=trace_id, type="guardrail", name="pre",
         input=input_text, output=pre.text, meta={"violations": violations},
@@ -355,7 +386,7 @@ def stream_run(
 
         try:
             for kind, payload in stream_with_fallback(
-                chain=version.fallback_chain,
+                chain=chain,
                 system=version.system_prompt,
                 prompt=pre.text,
                 model=version.model,

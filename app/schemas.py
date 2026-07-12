@@ -57,6 +57,13 @@ class ApprovalDecision(BaseModel):
     note: str = ""
 
 
+class TenantSettings(BaseModel):
+    """PATCH /v1/tenant — cost-cap policy is the tenant admin's decision (Q2)."""
+
+    cost_cap_mode: str | None = None      # "block" | "warn" | "degrade"
+    monthly_cost_cap: float | None = None
+
+
 class EvalCase(BaseModel):
     input: str
     expected: str = ""          # reference answer for relevance/faithfulness scoring
