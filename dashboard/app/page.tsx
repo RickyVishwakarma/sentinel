@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 
 const FEATURES = [
-  ["Policy gateway", "Every agent call routes through one auth’d pipeline — rate-limit, cost-cap, guardrails, fallback."],
-  ["Guardrails", "PII redaction, prompt-injection detection, and output leak-blocking, pre- and post-call."],
-  ["Full traces", "Every run is a span tree: prompt → guardrails → LLM → cost. PII-redacted at rest."],
-  ["Provider fallback", "Anthropic → OpenAI → Gemini → template. Kill the primary; the run still succeeds."],
-  ["Cost attribution", "Per-tenant, per-agent spend with a monthly cap: block, warn, or degrade."],
-  ["Eval CI gate", "Score faithfulness, relevance, guardrail-pass-rate; block prompt regressions before they ship."],
+  ["Policy decision point", "Before an agent runs a high-risk tool, it asks Sentinel: allow, deny, or hold for a human."],
+  ["Human approval queue", "Risky actions — spend money, touch prod, email a customer — wait for a person to sign off."],
+  ["Kill switch", "Freeze an agent instantly and every action it attempts is denied, no redeploy."],
+  ["Full audit trail", "Every action an agent took — or was stopped from taking — is recorded, with who decided."],
+  ["Guardrails + traces", "PII redaction, prompt-injection blocking, and a per-run span tree, on top of the action layer."],
+  ["Cost + fallback", "Per-tenant spend caps and provider fallback (Anthropic → OpenAI → Gemini) come built in."],
 ];
 
 export default function Landing() {
@@ -34,16 +34,18 @@ export default function Landing() {
 
       <section className="mx-auto max-w-4xl px-6 pb-16 pt-16 text-center sm:pt-24">
         <div className="mb-5 inline-block rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs text-sky-400">
-          AI Agent Control Plane
+          Action governance for AI agents
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-zinc-50 sm:text-5xl">
-          Run LLM agents in production —{" "}
-          <span className="text-sky-400">safely.</span>
+          The approval layer for agents that{" "}
+          <span className="text-sky-400">do things.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-zinc-400">
-          Sentinel is the deploy · govern · observe · evaluate layer that sits{" "}
-          <em>above</em> your agent framework. Every call is policy-enforced, fully
-          traced, cost-attributed, and guarded — without replacing what you already build on.
+          Your agent can now spend money, touch prod, and email customers — with no
+          kill-switch and no paper trail. Sentinel puts every high-risk tool call through
+          policy: <span className="text-zinc-200">allow</span>,{" "}
+          <span className="text-zinc-200">deny</span>, or{" "}
+          <span className="text-zinc-200">hold for a human</span> — all audited.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link
@@ -78,11 +80,13 @@ export default function Landing() {
 
         <div className="mt-10 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="mb-2 text-[11px] uppercase tracking-widest text-zinc-500">
-            The request path
+            The decision point
           </div>
           <pre className="font-mono text-xs leading-relaxed text-zinc-400">
-{`auth → rate-limit → cost-cap → load agent version → guardrails(pre)
-  → LLM call + provider fallback → guardrails(post) → cost calc → trace`}
+{`agent: "I want to call refund(amount=5000)"
+  → Sentinel evaluates your policies
+  → refund over $100 requires approval → HELD
+  → a human approves or denies → audited → the agent proceeds (or doesn't)`}
           </pre>
         </div>
       </section>

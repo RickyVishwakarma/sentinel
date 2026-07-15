@@ -7,11 +7,15 @@ import { ErrorBox, Loading, Mono, StatusPill } from "@/components/ui";
 
 interface ApprovalItem {
   id: string;
-  run_id: string;
+  kind: "output" | "action";
+  run_id: string | null;
   trace_id: string;
-  reason: { guardrail: string; action: string; detail: string }[];
+  reason: { guardrail?: string; action?: string; detail?: string; policy?: string }[];
   status: string;
   held_output: string | null;
+  tool: string | null;
+  arguments: Record<string, unknown> | null;
+  action_request_id: string | null;
   decided_by: string | null;
   note: string;
   created_at: string | null;
@@ -38,16 +42,32 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
     }
   }
 
+  const isAction = item.kind === "action";
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+    <div
+      className={`rounded-lg border bg-zinc-900/60 p-4 ${
+        isAction ? "border-violet-500/30" : "border-zinc-800"
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-3">
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${
+            isAction
+              ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
+              : "border-zinc-700 bg-zinc-800/60 text-zinc-400"
+          }`}
+        >
+          {isAction ? "action" : "output"}
+        </span>
         <StatusPill status={item.status} />
         <span className="text-xs text-zinc-500">
           {item.created_at ? new Date(item.created_at).toLocaleString() : "—"}
         </span>
-        <Link href={`/runs/${item.run_id}`} className="text-xs text-sky-400 hover:underline">
-          View trace →
-        </Link>
+        {item.run_id && (
+          <Link href={`/runs/${item.run_id}`} className="text-xs text-sky-400 hover:underline">
+            View trace →
+          </Link>
+        )}
         {item.status === "pending" && (
           <span className="ml-auto flex gap-2">
             <button
@@ -69,18 +89,36 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
       </div>
 
       <div className="mt-3 space-y-2 text-xs">
+        {isAction && (
+          <div>
+            <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
+              Pending action
+            </div>
+            <div className="rounded bg-zinc-950 p-3 font-mono text-zinc-200">
+              <span className="text-violet-300">{item.tool}</span>(
+              {item.arguments && Object.keys(item.arguments).length > 0 ? (
+                <span className="text-zinc-400">
+                  {Object.entries(item.arguments)
+                    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+                    .join(", ")}
+                </span>
+              ) : null}
+              )
+            </div>
+          </div>
+        )}
         <div>
           <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
-            Flagged because
+            {isAction ? "Held by policy" : "Flagged because"}
           </div>
           {item.reason.map((r, i) => (
             <div key={i} className="text-amber-400">
-              <span className="font-medium">{r.guardrail}</span>
+              <span className="font-medium">{r.guardrail ?? "policy"}</span>
               <span className="text-zinc-500"> — {r.detail}</span>
             </div>
           ))}
         </div>
-        {item.held_output !== null && (
+        {item.held_output !== null && item.held_output !== "" && (
           <div>
             <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
               Held output
@@ -133,8 +171,9 @@ export default function ApprovalsPage() {
 
       {data.entries.length === 0 ? (
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
-          Nothing here. Runs land in this queue when a flag-level guardrail (e.g. PII
-          redaction) fires on an agent with <Mono>hitl_approval</Mono> enabled.
+          Nothing here. Items land in this queue when a{" "}
+          <span className="text-violet-300">policy</span> holds a tool call for approval,
+          or a flag-level guardrail fires on an agent with <Mono>hitl_approval</Mono> enabled.
         </div>
       ) : (
         <>

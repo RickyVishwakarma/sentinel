@@ -73,6 +73,13 @@ def _apply_mini_migrations() -> None:
     additions = {
         "tenants": [("cost_cap_mode", "VARCHAR DEFAULT 'block'")],
         "users": [("email", "VARCHAR"), ("password_hash", "VARCHAR")],
+        "agents": [("frozen", "BOOLEAN DEFAULT 0")],
+        "approvals": [
+            ("kind", "VARCHAR DEFAULT 'output'"),
+            ("tool", "VARCHAR"),
+            ("arguments", "JSON"),
+            ("action_request_id", "VARCHAR"),
+        ],
     }
     inspector = inspect(engine)
     with engine.begin() as conn:

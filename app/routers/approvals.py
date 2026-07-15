@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import current_user, require_role
 from app.db import get_db
-from app.models import Approval, AuditLog, Run, User
+from app.models import ActionRequest, Approval, AuditLog, Run, User
 from app.schemas import ApprovalDecision
 
 router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
@@ -23,11 +23,15 @@ router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
 def _approval_dict(a: Approval, include_output: bool) -> dict:
     return {
         "id": a.id,
+        "kind": a.kind,
         "run_id": a.run_id,
         "trace_id": a.trace_id,
         "reason": a.reason,
         "status": a.status,
         "held_output": a.held_output if include_output else None,
+        "tool": a.tool,
+        "arguments": a.arguments,
+        "action_request_id": a.action_request_id,
         "decided_by": a.decided_by,
         "note": a.note,
         "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -88,22 +92,33 @@ def decide(
     if a.status != "pending":
         raise HTTPException(409, f"approval already {a.status}")
 
-    run = db.query(Run).filter(Run.id == a.run_id).first()
     a.status = "approved" if body.decision == "approve" else "denied"
     a.decided_by = user.id
     a.note = body.note
     a.decided_at = datetime.now(timezone.utc)
-    if run is not None:
-        run.status = "ok" if body.decision == "approve" else "denied"
 
-    db.add(
-        AuditLog(
-            tenant_id=user.tenant_id,
-            actor=user.id,
-            action=f"hitl.{body.decision}",
-            target=a.run_id,
-            meta={"approval_id": a.id, "note": body.note},
+    if a.kind == "action":
+        # Release/deny the held tool call; the polling agent reads this next.
+        req = (
+            db.query(ActionRequest)
+            .filter(ActionRequest.id == a.action_request_id)
+            .first()
         )
-    )
+        if req is not None:
+            req.decision = "approved" if body.decision == "approve" else "denied"
+            req.decided_at = a.decided_at
+        audit_action = f"action.{body.decision}"
+        target = a.action_request_id or a.id
+        meta = {"approval_id": a.id, "tool": a.tool, "note": body.note}
+    else:
+        run = db.query(Run).filter(Run.id == a.run_id).first()
+        if run is not None:
+            run.status = "ok" if body.decision == "approve" else "denied"
+        audit_action = f"hitl.{body.decision}"
+        target = a.run_id or a.id
+        meta = {"approval_id": a.id, "note": body.note}
+
+    db.add(AuditLog(tenant_id=user.tenant_id, actor=user.id, action=audit_action,
+                    target=target, meta=meta))
     db.commit()
     return _approval_dict(a, include_output=True)

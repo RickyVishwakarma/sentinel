@@ -59,6 +59,7 @@ const NAV = [
   { href: "/overview", label: "Overview" },
   { href: "/runs", label: "Runs" },
   { href: "/agents", label: "Agents" },
+  { href: "/policies", label: "Policies" },
   { href: "/approvals", label: "Approvals" },
   { href: "/evals", label: "Evals" },
   { href: "/cost", label: "Cost" },

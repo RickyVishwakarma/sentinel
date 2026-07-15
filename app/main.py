@@ -11,7 +11,7 @@ from app import __version__
 from app.config import get_settings
 from app.db import init_db
 from app.routers import (
-    admin, agents, approvals, audit, auth_router, cost, evals, runs, tenant,
+    actions, admin, agents, approvals, audit, auth_router, cost, evals, runs, tenant,
 )
 
 
@@ -52,6 +52,7 @@ app.include_router(audit.router)
 app.include_router(tenant.router)
 app.include_router(admin.router)
 app.include_router(auth_router.router)
+app.include_router(actions.router)
 
 
 @app.get("/health", tags=["meta"])

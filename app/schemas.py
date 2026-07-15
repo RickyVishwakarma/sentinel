@@ -32,6 +32,7 @@ class AgentOut(BaseModel):
     id: str
     name: str
     current_version: int
+    frozen: bool = False
 
 
 class RunRequest(BaseModel):
@@ -67,6 +68,31 @@ class TenantSettings(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+# ── Action governance ──────────────────────────────────────────────────────
+
+class ActionCheckRequest(BaseModel):
+    """An agent asks Sentinel whether it may perform a tool call."""
+
+    tool: str
+    arguments: dict = Field(default_factory=dict)
+
+
+class PolicyCondition(BaseModel):
+    field: str
+    op: str = "always"     # gt|gte|lt|lte|eq|ne|in|not_in|contains|not_contains|regex|always
+    value: object = None
+
+
+class PolicyCreate(BaseModel):
+    tool: str                       # glob: "refund", "delete_*", "*"
+    effect: str                     # allow | deny | require_approval
+    condition: PolicyCondition | None = None
+    priority: int = 100
+    description: str = ""
+    agent_id: str | None = None     # null → applies to every agent in the tenant
+    enabled: bool = True
 
 
 class EvalCase(BaseModel):

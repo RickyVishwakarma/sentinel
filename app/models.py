@@ -61,6 +61,8 @@ class Agent(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     current_version: Mapped[int] = mapped_column(Integer, default=0)
+    # Kill switch (action governance): when frozen, every action check denies.
+    frozen: Mapped[bool] = mapped_column(default=False)
 
     tenant: Mapped[Tenant] = relationship(back_populates="agents")
     versions: Mapped[list[AgentVersion]] = relationship(
@@ -114,24 +116,73 @@ class AuditLog(Base):
 
 
 class Approval(Base):
-    """Human-in-the-loop queue item (Module M6).
+    """Human-in-the-loop queue item.
 
-    Created when a run trips a flag-level guardrail on an agent that has the
-    ``hitl_approval`` guardrail enabled. The run's output is withheld here until
-    an admin approves (releases it) or denies it.
+    Two kinds:
+      * ``output`` (Module M6) — a run's flagged output is withheld until an
+        admin approves or denies it.
+      * ``action`` (action governance) — an agent asked to perform a tool call
+        that policy routed to human approval; the action is held until decided.
     """
 
     __tablename__ = "approvals"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
-    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), index=True)
-    trace_id: Mapped[str] = mapped_column(String, index=True)
-    reason: Mapped[list] = mapped_column(JSON, default=list)  # flag violations
+    kind: Mapped[str] = mapped_column(String, default="output", index=True)  # output | action
+    run_id: Mapped[str | None] = mapped_column(ForeignKey("runs.id"), index=True, nullable=True)
+    trace_id: Mapped[str] = mapped_column(String, index=True, default="")
+    reason: Mapped[list] = mapped_column(JSON, default=list)  # flag violations / policy match
     held_output: Mapped[str] = mapped_column(String, default="")
+    # Action approvals carry the pending tool call:
+    tool: Mapped[str | None] = mapped_column(String, nullable=True)
+    arguments: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    action_request_id: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
     status: Mapped[str] = mapped_column(String, default="pending", index=True)  # pending | approved | denied
     decided_by: Mapped[str | None] = mapped_column(String, nullable=True)
     note: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Policy(Base):
+    """A declarative action-governance rule (the policy decision point).
+
+    A rule matches a tool (glob) and an optional condition on the call's
+    arguments, and yields an effect: allow, deny, or require_approval. Rules are
+    evaluated by ascending ``priority``; the first match wins. A rule with
+    ``agent_id`` null applies to every agent in the tenant.
+    """
+
+    __tablename__ = "policies"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    agent_id: Mapped[str | None] = mapped_column(ForeignKey("agents.id"), index=True, nullable=True)
+    tool: Mapped[str] = mapped_column(String, nullable=False)          # glob, e.g. "refund", "delete_*", "*"
+    condition: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {field, op, value}
+    effect: Mapped[str] = mapped_column(String, nullable=False)        # allow | deny | require_approval
+    priority: Mapped[int] = mapped_column(Integer, default=100)        # lower = evaluated first
+    description: Mapped[str] = mapped_column(String, default="")
+    enabled: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class ActionRequest(Base):
+    """Every action an agent asked to perform, with the decision — the audit
+    surface for agentic side effects (the core of action governance)."""
+
+    __tablename__ = "action_requests"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    agent_id: Mapped[str] = mapped_column(ForeignKey("agents.id"), index=True)
+    tool: Mapped[str] = mapped_column(String, nullable=False)
+    arguments: Mapped[dict] = mapped_column(JSON, default=dict)
+    decision: Mapped[str] = mapped_column(String, default="pending", index=True)  # allow|deny|pending|approved|denied
+    matched_policy_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    reason: Mapped[str] = mapped_column(String, default="")
+    approval_id: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

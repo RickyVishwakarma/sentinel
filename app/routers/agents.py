@@ -61,7 +61,7 @@ def create_agent(
     db.flush()  # assign agent.id before creating the version
     _next_version(db, agent, body.model_dump())
     db.commit()
-    return AgentOut(id=agent.id, name=agent.name, current_version=agent.current_version)
+    return AgentOut(id=agent.id, name=agent.name, current_version=agent.current_version, frozen=agent.frozen)
 
 
 @router.get("", response_model=list[AgentOut])
@@ -69,7 +69,10 @@ def list_agents(
     db: Session = Depends(get_db), user: User = Depends(current_user)
 ) -> list[AgentOut]:
     agents = db.query(Agent).filter(Agent.tenant_id == user.tenant_id).all()
-    return [AgentOut(id=a.id, name=a.name, current_version=a.current_version) for a in agents]
+    return [
+        AgentOut(id=a.id, name=a.name, current_version=a.current_version, frozen=a.frozen)
+        for a in agents
+    ]
 
 
 @router.post("/{agent_id}/versions", response_model=AgentOut, status_code=201)
@@ -90,7 +93,7 @@ def create_version(
     }
     _next_version(db, agent, merged)
     db.commit()
-    return AgentOut(id=agent.id, name=agent.name, current_version=agent.current_version)
+    return AgentOut(id=agent.id, name=agent.name, current_version=agent.current_version, frozen=agent.frozen)
 
 
 @router.post("/{agent_id}/run", response_model=RunResponse)

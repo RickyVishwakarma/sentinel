@@ -121,6 +121,19 @@ export interface AgentOut {
   id: string;
   name: string;
   current_version: number;
+  frozen?: boolean;
+}
+
+export interface Policy {
+  id: string;
+  agent_id: string | null;
+  tool: string;
+  effect: "allow" | "deny" | "require_approval";
+  condition: { field: string; op: string; value: unknown } | null;
+  priority: number;
+  description: string;
+  enabled: boolean;
+  created_at: string | null;
 }
 
 export interface CostReport {

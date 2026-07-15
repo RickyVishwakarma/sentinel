@@ -1,11 +1,33 @@
-# Sentinel — an AI Agent Control Plane
+# Sentinel — action governance for AI agents
 
-The deploy · govern · observe · evaluate layer that makes LLM agents
-production-safe — without replacing the frameworks teams already build on.
+**The approval layer for agents that *do things*.** Your agent can now spend
+money, touch prod, and email customers — with no kill-switch and no paper trail.
+Sentinel puts every high-risk tool call through policy before it runs:
+**allow**, **deny**, or **hold for a human** — all audited.
 
-Every agent call routes through a policy-enforcing FastAPI gateway that produces
-a full trace, applies guardrails, falls back across providers, and attributes
-cost — while an eval harness blocks regressions before a prompt change ships.
+```
+agent: "I want to call refund(amount=5000)"
+  → Sentinel evaluates your policies
+  → refund over $100 requires approval → HELD
+  → a human approves or denies → audited → the agent proceeds (or doesn't)
+```
+
+The policy decision point sits on top of a full **AI gateway**: every LLM call
+is traced, guarded (PII redaction, prompt-injection blocking), cost-attributed,
+and provider-fallback'd, with an eval CI gate for prompt regressions.
+
+### Action governance (the wedge)
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /v1/agents/{id}/actions/check` | The PDP: agent asks before a tool call → `allow` / `deny` / `pending` |
+| `GET /v1/actions/{id}` | Poll a held action until a human decides |
+| `GET/POST/DELETE /v1/policies` | Declarative per-tool rules (glob + condition → effect) |
+| `POST /v1/agents/{id}/freeze` · `/unfreeze` | Kill switch — a frozen agent denies every action |
+
+A policy is `{tool: "refund", condition: {field: "amount", op: "gt", value: 100},
+effect: "require_approval"}`. Rules evaluate by priority; first match wins; every
+decision lands in the audit log.
 
 > This is the **Week-1 runnable slice** of the [PRD](#whats-here-vs-the-full-prd):
 > Agent Registry, the Gateway pipeline (routing + fallback + rate-limit), guardrails,

@@ -267,6 +267,35 @@ function Playground({ agent }: { agent: AgentOut }) {
   );
 }
 
+function FreezeButton({ agent, onChanged }: { agent: AgentOut; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    setBusy(true);
+    try {
+      await apiFetch(`/v1/agents/${agent.id}/${agent.frozen ? "unfreeze" : "freeze"}`, {
+        method: "POST",
+      });
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      onClick={toggle}
+      disabled={busy}
+      title={agent.frozen ? "Resume: allow actions again" : "Kill switch: deny all actions"}
+      className={`rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
+        agent.frozen
+          ? "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+          : "border-red-500/40 text-red-400 hover:bg-red-500/10"
+      }`}
+    >
+      {busy ? "…" : agent.frozen ? "Unfreeze" : "Freeze"}
+    </button>
+  );
+}
+
 export default function AgentsPage() {
   const { data: agents, error, loading, refresh } = useApi<AgentOut[]>("/v1/agents");
 
@@ -293,13 +322,18 @@ export default function AgentsPage() {
               <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400">
                 v{a.current_version}
               </span>
+              {a.frozen && (
+                <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs text-red-400">
+                  frozen
+                </span>
+              )}
               <Mono>{a.id}</Mono>
-              <Link
-                href={`/evals?agent=${a.id}`}
-                className="ml-auto text-xs text-sky-400 hover:underline"
-              >
-                Eval history →
-              </Link>
+              <div className="ml-auto flex items-center gap-3">
+                <FreezeButton agent={a} onChanged={refresh} />
+                <Link href={`/evals?agent=${a.id}`} className="text-xs text-sky-400 hover:underline">
+                  Eval history →
+                </Link>
+              </div>
             </div>
             <Playground agent={a} />
           </div>
