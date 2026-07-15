@@ -29,6 +29,14 @@ class FallbackOutcome:
     attempts: list[dict]  # per-provider attempt log for the trace
 
 
+def provider_status() -> list[dict]:
+    """Which providers are configured (live) vs. skipped — for the UI badge."""
+    return [
+        {"id": pid, "available": p.available()}
+        for pid, p in _REGISTRY.items()
+    ]
+
+
 def run_with_fallback(
     *, chain: list[str], system: str, prompt: str, model: str
 ) -> FallbackOutcome:

@@ -64,6 +64,11 @@ class TenantSettings(BaseModel):
     monthly_cost_cap: float | None = None
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 class EvalCase(BaseModel):
     input: str
     expected: str = ""          # reference answer for relevance/faithfulness scoring

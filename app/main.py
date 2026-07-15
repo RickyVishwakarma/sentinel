@@ -10,7 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.config import get_settings
 from app.db import init_db
-from app.routers import admin, agents, approvals, audit, cost, evals, runs, tenant
+from app.routers import (
+    admin, agents, approvals, audit, auth_router, cost, evals, runs, tenant,
+)
 
 
 @asynccontextmanager
@@ -49,11 +51,20 @@ app.include_router(cost.router)
 app.include_router(audit.router)
 app.include_router(tenant.router)
 app.include_router(admin.router)
+app.include_router(auth_router.router)
 
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
     return {"status": "ok", "version": __version__}
+
+
+@app.get("/v1/providers", tags=["meta"])
+def providers() -> dict:
+    """Which model providers are live (have a key) vs. running on the template."""
+    from app.providers import provider_status
+
+    return {"providers": provider_status()}
 
 
 @app.get("/", tags=["meta"])

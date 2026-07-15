@@ -15,12 +15,19 @@ export function apiUrl(): string {
 
 export function apiKey(): string {
   if (typeof window === "undefined") return DEFAULT_KEY;
+  // Prefer the logged-in session's key; fall back to a manually-set key.
+  try {
+    const raw = localStorage.getItem("sentinel_session");
+    if (raw) {
+      const k = JSON.parse(raw)?.api_key;
+      if (k) return k;
+    }
+  } catch {}
   return localStorage.getItem("sentinel_api_key") || DEFAULT_KEY;
 }
 
-export function setApiConfig(url: string, key: string) {
+export function setApiUrl(url: string) {
   localStorage.setItem("sentinel_api_url", url);
-  localStorage.setItem("sentinel_api_key", key);
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -80,7 +87,7 @@ export function useApi<T>(path: string | null) {
 export interface RunSummary {
   id: string;
   agent_version_id: string;
-  status: "ok" | "blocked" | "error";
+  status: "ok" | "blocked" | "error" | "pending_approval" | "denied";
   provider: string | null;
   total_tokens: number;
   cost: number;
@@ -145,6 +152,11 @@ export interface RunResponse {
   latency_ms: number;
   violations: Record<string, unknown>[];
   approval_id?: string | null;
+}
+
+export interface ProviderStatus {
+  id: string;
+  available: boolean;
 }
 
 export interface EvalHistoryEntry {

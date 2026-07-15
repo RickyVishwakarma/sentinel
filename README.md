@@ -21,9 +21,20 @@ python -m venv .venv && . .venv/Scripts/activate   # Windows
 #   source .venv/bin/activate                       # macOS / Linux
 pip install -r requirements.txt
 
-python -m app.seed                                  # creates demo tenant + agent, prints API key
+python -m app.seed                                  # creates demo tenant + admin login
 uvicorn app.main:app --reload                       # http://localhost:8000/docs
 ```
+
+Then start the dashboard and sign in:
+
+```bash
+cd dashboard && npm install && npm run dev          # http://localhost:3000
+# sign in:  admin@sentinel.dev  /  sentinel123
+```
+
+No agents are pre-created — register your own from the **Agents** page, then send
+it a message from the playground. Humans log in with email/password; the API key
+(`sentinel-demo-key`) remains the machine-to-machine credential for curl.
 
 With no `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` set, the gateway
 runs entirely on a **deterministic template provider**, so the full pipeline —

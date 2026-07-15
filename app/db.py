@@ -72,6 +72,7 @@ def _apply_mini_migrations() -> None:
 
     additions = {
         "tenants": [("cost_cap_mode", "VARCHAR DEFAULT 'block'")],
+        "users": [("email", "VARCHAR"), ("password_hash", "VARCHAR")],
     }
     inspector = inspect(engine)
     with engine.begin() as conn:

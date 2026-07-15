@@ -1,98 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { RunSummary, useApi } from "@/lib/api";
-import { Card, ErrorBox, Loading, Mono, StatusPill } from "@/components/ui";
+import { useAuth } from "@/lib/auth";
 
-function fmtTime(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
+const FEATURES = [
+  ["Policy gateway", "Every agent call routes through one auth’d pipeline — rate-limit, cost-cap, guardrails, fallback."],
+  ["Guardrails", "PII redaction, prompt-injection detection, and output leak-blocking, pre- and post-call."],
+  ["Full traces", "Every run is a span tree: prompt → guardrails → LLM → cost. PII-redacted at rest."],
+  ["Provider fallback", "Anthropic → OpenAI → Gemini → template. Kill the primary; the run still succeeds."],
+  ["Cost attribution", "Per-tenant, per-agent spend with a monthly cap: block, warn, or degrade."],
+  ["Eval CI gate", "Score faithfulness, relevance, guardrail-pass-rate; block prompt regressions before they ship."],
+];
 
-export default function RunsPage() {
-  const { data: runs, error, loading, refresh } = useApi<RunSummary[]>("/v1/runs?limit=100");
-
-  if (error) return <ErrorBox error={error} />;
-  if (loading || !runs) return <Loading />;
-
-  const total = runs.length;
-  const blocked = runs.filter((r) => r.status === "blocked").length;
-  const cost = runs.reduce((s, r) => s + r.cost, 0);
-  const avgLatency = total ? Math.round(runs.reduce((s, r) => s + r.latency_ms, 0) / total) : 0;
+export default function Landing() {
+  const { session } = useAuth();
+  const cta = session ? "/overview" : "/login";
+  const ctaLabel = session ? "Open dashboard" : "Sign in";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-100">Runs</h1>
-        <button
-          onClick={refresh}
-          className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900"
+    <div className="min-h-screen bg-zinc-950 text-zinc-200">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-sm bg-sky-400" />
+          <span className="text-sm font-semibold tracking-wide text-zinc-100">SENTINEL</span>
+        </div>
+        <Link
+          href={cta}
+          className="rounded border border-zinc-700 px-4 py-1.5 text-sm text-zinc-300 hover:bg-zinc-900"
         >
-          Refresh
-        </button>
-      </div>
+          {ctaLabel}
+        </Link>
+      </header>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card label="Runs (recent)" value={String(total)} />
-        <Card
-          label="Blocked"
-          value={String(blocked)}
-          sub={total ? `${Math.round((blocked / total) * 100)}% of recent runs` : undefined}
-        />
-        <Card label="Cost" value={`$${cost.toFixed(4)}`} sub="recent runs" />
-        <Card label="Avg latency" value={`${avgLatency} ms`} sub="gateway, end to end" />
-      </div>
+      <section className="mx-auto max-w-4xl px-6 pb-16 pt-16 text-center sm:pt-24">
+        <div className="mb-5 inline-block rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs text-sky-400">
+          AI Agent Control Plane
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-50 sm:text-5xl">
+          Run LLM agents in production —{" "}
+          <span className="text-sky-400">safely.</span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-2xl text-lg text-zinc-400">
+          Sentinel is the deploy · govern · observe · evaluate layer that sits{" "}
+          <em>above</em> your agent framework. Every call is policy-enforced, fully
+          traced, cost-attributed, and guarded — without replacing what you already build on.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link
+            href={cta}
+            className="rounded-lg bg-sky-500 px-6 py-2.5 text-sm font-medium text-zinc-950 hover:bg-sky-400"
+          >
+            {ctaLabel} →
+          </Link>
+          <a
+            href="https://github.com/RickyVishwakarma/sentinel"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-zinc-700 px-6 py-2.5 text-sm text-zinc-300 hover:bg-zinc-900"
+          >
+            View source
+          </a>
+        </div>
+      </section>
 
-      {total === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
-          No runs yet. Fire one at the gateway or use the playground on the{" "}
-          <Link href="/agents" className="text-sky-400 hover:underline">
-            Agents
-          </Link>{" "}
-          page.
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map(([title, body]) => (
+            <div
+              key={title}
+              className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5"
+            >
+              <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
+              <p className="mt-2 text-sm text-zinc-400">{body}</p>
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-800">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-900 text-[11px] uppercase tracking-widest text-zinc-500">
-              <tr>
-                <th className="px-4 py-2.5 font-medium">Time</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium">Provider</th>
-                <th className="px-4 py-2.5 font-medium">Tokens</th>
-                <th className="px-4 py-2.5 font-medium">Cost</th>
-                <th className="px-4 py-2.5 font-medium">Latency</th>
-                <th className="px-4 py-2.5 font-medium">Trace</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/80">
-              {runs.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-2.5 text-zinc-400">{fmtTime(r.created_at)}</td>
-                  <td className="px-4 py-2.5">
-                    <StatusPill status={r.status} />
-                  </td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.provider ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.total_tokens}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">${r.cost.toFixed(4)}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.latency_ms} ms</td>
-                  <td className="px-4 py-2.5">
-                    <Link href={`/runs/${r.id}`} className="text-sky-400 hover:underline">
-                      <Mono>{r.trace_id.slice(0, 12)}…</Mono>
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="mt-10 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-2 text-[11px] uppercase tracking-widest text-zinc-500">
+            The request path
+          </div>
+          <pre className="font-mono text-xs leading-relaxed text-zinc-400">
+{`auth → rate-limit → cost-cap → load agent version → guardrails(pre)
+  → LLM call + provider fallback → guardrails(post) → cost calc → trace`}
+          </pre>
         </div>
-      )}
+      </section>
+
+      <footer className="border-t border-zinc-900 px-6 py-6 text-center text-xs text-zinc-600">
+        Sentinel — AI Agent Control Plane
+      </footer>
     </div>
   );
 }

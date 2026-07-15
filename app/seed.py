@@ -1,16 +1,21 @@
-"""Seed a demo tenant, an admin user (with API key), and a sample agent.
+"""Seed the demo tenant + an admin login. No sample agents or runs are created
+— you register your own agent from the dashboard, so all data is yours.
 
 Run once after install:  python -m app.seed
-Idempotent — re-running reuses the existing demo tenant and prints its API key.
+Idempotent — re-running reuses the existing demo tenant and (re)sets the
+admin password so the printed credentials always work.
 """
 
 from __future__ import annotations
 
+from app.auth import hash_password
 from app.db import SessionLocal, init_db
-from app.models import Agent, AgentVersion, Tenant, User
+from app.models import Tenant, User
 
 DEMO_TENANT = "Demo Tenant"
-DEMO_API_KEY = "sentinel-demo-key"  # fixed key so the README examples just work
+DEMO_EMAIL = "admin@sentinel.dev"
+DEMO_PASSWORD = "sentinel123"
+DEMO_API_KEY = "sentinel-demo-key"  # stable key so API/curl examples keep working
 
 
 def seed() -> None:
@@ -27,44 +32,17 @@ def seed() -> None:
         if user is None:
             user = User(tenant_id=tenant.id, role="admin", api_key=DEMO_API_KEY)
             db.add(user)
-            db.flush()
-
-        agent = (
-            db.query(Agent)
-            .filter(Agent.tenant_id == tenant.id, Agent.name == "support-bot")
-            .first()
-        )
-        if agent is None:
-            agent = Agent(tenant_id=tenant.id, name="support-bot", current_version=0)
-            db.add(agent)
-            db.flush()
-            db.add(
-                AgentVersion(
-                    agent_id=agent.id,
-                    version=1,
-                    model="claude-opus-4-8",
-                    system_prompt="You are a concise, friendly customer-support assistant.",
-                    tools=["search_docs"],
-                    guardrails=["pii_redaction", "prompt_injection", "output_blocklist", "hitl_approval"],
-                    fallback_chain=["anthropic", "openai", "gemini"],
-                )
-            )
-            agent.current_version = 1
+        user.email = DEMO_EMAIL
+        user.password_hash = hash_password(DEMO_PASSWORD)
 
         db.commit()
 
-        print("Seed complete.")
-        print(f"  Tenant:   {tenant.name} ({tenant.id})")
-        print(f"  API key:  {DEMO_API_KEY}")
-        print(f"  Agent:    {agent.name} ({agent.id})  v{agent.current_version}")
-        print("\nTry it:")
-        print(
-            '  curl -s -X POST localhost:8000/v1/agents/'
-            f'{agent.id}/run \\\n'
-            f'    -H "Authorization: Bearer {DEMO_API_KEY}" \\\n'
-            '    -H "Content-Type: application/json" \\\n'
-            '    -d \'{"input": "How do I reset my password?"}\''
-        )
+        print("Seed complete — sign in at the dashboard with:")
+        print(f"  Email:    {DEMO_EMAIL}")
+        print(f"  Password: {DEMO_PASSWORD}")
+        print(f"  (API key for curl / machine access: {DEMO_API_KEY})")
+        print("\nNo agents are pre-created — register one from the Agents page,")
+        print("then send it a message from the playground.")
     finally:
         db.close()
 

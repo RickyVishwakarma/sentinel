@@ -2,8 +2,130 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { AgentOut, RunResponse, streamRun, useApi } from "@/lib/api";
+import { AgentOut, RunResponse, apiFetch, streamRun, useApi } from "@/lib/api";
 import { ErrorBox, Loading, Mono, StatusPill } from "@/components/ui";
+
+const ALL_GUARDRAILS = [
+  ["pii_redaction", "Redact PII (pre)"],
+  ["prompt_injection", "Block prompt injection (pre)"],
+  ["output_blocklist", "Block secret leaks (post)"],
+  ["hitl_approval", "Hold flagged runs for approval"],
+];
+
+function NewAgentForm({ onCreated }: { onCreated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [prompt, setPrompt] = useState("You are a concise, helpful assistant.");
+  const [model, setModel] = useState("claude-opus-4-8");
+  const [guardrails, setGuardrails] = useState<string[]>([
+    "pii_redaction",
+    "prompt_injection",
+    "output_blocklist",
+  ]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function toggle(g: string) {
+    setGuardrails((cur) => (cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g]));
+  }
+
+  async function create() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await apiFetch<AgentOut>("/v1/agents", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          model: model.trim(),
+          system_prompt: prompt,
+          guardrails,
+          fallback_chain: ["anthropic", "openai", "gemini"],
+        }),
+      });
+      setName("");
+      setOpen(false);
+      onCreated();
+    } catch (e) {
+      setErr(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400"
+      >
+        + New agent
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-900/60 p-4">
+      <div className="flex gap-3">
+        <label className="flex-1 text-xs text-zinc-400">
+          Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="support-bot"
+            className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          />
+        </label>
+        <label className="flex-1 text-xs text-zinc-400">
+          Model
+          <input
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-100"
+          />
+        </label>
+      </div>
+      <label className="block text-xs text-zinc-400">
+        System prompt
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={2}
+          className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+        />
+      </label>
+      <div className="flex flex-wrap gap-3">
+        {ALL_GUARDRAILS.map(([id, label]) => (
+          <label key={id} className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <input
+              type="checkbox"
+              checked={guardrails.includes(id)}
+              onChange={() => toggle(id)}
+              className="accent-sky-500"
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+      {err && <p className="font-mono text-xs text-red-400">{err}</p>}
+      <div className="flex gap-2">
+        <button
+          onClick={create}
+          disabled={busy || !name.trim()}
+          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400 disabled:opacity-50"
+        >
+          {busy ? "Creating…" : "Create agent"}
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-900"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface PlayResult {
   status: string;
@@ -146,7 +268,7 @@ function Playground({ agent }: { agent: AgentOut }) {
 }
 
 export default function AgentsPage() {
-  const { data: agents, error, loading } = useApi<AgentOut[]>("/v1/agents");
+  const { data: agents, error, loading, refresh } = useApi<AgentOut[]>("/v1/agents");
 
   if (error) return <ErrorBox error={error} />;
   if (loading || !agents) return <Loading />;
@@ -154,9 +276,14 @@ export default function AgentsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-zinc-100">Agents</h1>
+      <NewAgentForm onCreated={refresh} />
       {agents.length === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
-          No agents registered. Seed one with <Mono>python -m app.seed</Mono>.
+        <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+          <p>No agents yet — create your first one above.</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Give it a name, a system prompt, and pick guardrails. Then send it a message from the
+            playground to watch the full pipeline run.
+          </p>
         </div>
       ) : (
         agents.map((a) => (
