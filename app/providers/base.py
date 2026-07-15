@@ -18,12 +18,33 @@ class ProviderResult:
         return self.input_tokens + self.output_tokens
 
 
+# Which model-name prefixes belong to which provider. Used so a run that falls
+# back across providers doesn't hand a Claude model id to Gemini, etc.
+_MODEL_PREFIXES = {
+    "anthropic": ("claude",),
+    "openai": ("gpt", "o1", "o3", "o4"),
+    "gemini": ("gemini",),
+}
+
+
 class Provider:
     id: str = "base"
 
     def available(self) -> bool:
         """Whether this provider is usable (e.g. has an API key configured)."""
         return False
+
+    def resolve_model(self, requested: str) -> str:
+        """Use the requested model only if it belongs to this provider.
+
+        The agent stores a single ``model`` string, but the fallback chain can
+        span providers. When a run falls through to a provider whose family
+        doesn't match the requested model, use that provider's default instead.
+        """
+        prefixes = _MODEL_PREFIXES.get(self.id, ())
+        if requested and prefixes and requested.lower().startswith(prefixes):
+            return requested
+        return getattr(self, "_default_model", requested)
 
     def generate(self, *, system: str, prompt: str, model: str) -> ProviderResult:
         raise NotImplementedError

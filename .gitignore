@@ -9,3 +9,5 @@ venv/
 .mypy_cache/
 .DS_Store
 *.log
+*.db-shm
+*.db-wal

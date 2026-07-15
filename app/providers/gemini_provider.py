@@ -26,7 +26,7 @@ class GeminiProvider(Provider):
         return bool(self._key)
 
     def generate(self, *, system: str, prompt: str, model: str) -> ProviderResult:
-        model_id = model or self._default_model
+        model_id = self.resolve_model(model)
         url = _ENDPOINT.format(model=model_id, key=self._key)
         body = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],

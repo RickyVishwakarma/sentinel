@@ -25,7 +25,7 @@ class AnthropicProvider(Provider):
         from anthropic import Anthropic  # imported lazily; optional dependency
 
         client = Anthropic(api_key=self._key)
-        model_id = model or self._default_model
+        model_id = self.resolve_model(model)
         message = client.messages.create(
             model=model_id,
             max_tokens=16000,
@@ -52,7 +52,7 @@ class AnthropicProvider(Provider):
 
         client = Anthropic(api_key=self._key)
         with client.messages.stream(
-            model=model or self._default_model,
+            model=self.resolve_model(model),
             max_tokens=16000,
             thinking={"type": "adaptive"},
             system=system or None,

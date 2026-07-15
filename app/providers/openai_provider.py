@@ -20,7 +20,7 @@ class OpenAIProvider(Provider):
         from openai import OpenAI  # imported lazily; optional dependency
 
         client = OpenAI(api_key=self._key)
-        model_id = model or self._default_model
+        model_id = self.resolve_model(model)
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
