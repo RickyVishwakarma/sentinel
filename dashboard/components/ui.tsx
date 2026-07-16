@@ -106,8 +106,9 @@ const NAV = [
   { href: "/audit", label: "Audit" },
 ];
 
-// Public/marketing routes render bare (own chrome, no auth guard).
+// Public/marketing + Clerk auth routes render bare (own chrome, no app guard).
 const PUBLIC = ["/", "/login", "/product", "/pricing", "/faq", "/contact"];
+const PUBLIC_PREFIXES = ["/sign-in", "/sign-up"];
 
 function ProviderBadge() {
   const [live, setLive] = useState<string[] | null>(null);
@@ -141,7 +142,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { session, loading, logout } = useAuth();
-  const isPublic = PUBLIC.includes(pathname);
+  const isPublic =
+    PUBLIC.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
   // Client-side route guard (hooks must run unconditionally — guard inside).
   useEffect(() => {

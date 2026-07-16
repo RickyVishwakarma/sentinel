@@ -1,3 +1,4 @@
+import {ClerkProvider} from "@clerk/nextjs";
 import type { Metadata } from "next";
 import {
   Cedarville_Cursive,
@@ -64,9 +65,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${inter.variable} ${sourceSerif.variable} ${cedarville.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>
+        <ClerkProvider>
+          <AuthProvider>
           <Shell>{children}</Shell>
-        </AuthProvider>
+          </AuthProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

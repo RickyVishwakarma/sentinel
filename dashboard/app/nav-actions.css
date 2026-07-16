@@ -1,0 +1,46 @@
+/* Auth controls in the landing nav — same B&W system as the rest. */
+
+.snl-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.snl-nav-link {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+  padding: 8px 4px;
+  transition: opacity 0.2s ease;
+}
+
+.snl-nav-link:hover {
+  opacity: 0.6;
+}
+
+.snl-nav-cta {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  background: var(--button-bg);
+  color: var(--button-text);
+  padding: 9px 18px;
+  border-radius: 999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.snl-nav-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* On small screens the drawer carries these — keep the bar uncluttered. */
+@media (max-width: 810px) {
+  .snl-nav-link,
+  .snl-nav-cta {
+    display: none;
+  }
+}

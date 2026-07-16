@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronUp } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { Show, UserButton } from "@clerk/nextjs";
 import "@/app/landing.css";
 import "@/app/marketing.css";
+import "@/app/nav-actions.css";
 
 /* Shared chrome for the public/marketing pages. All styling lives in
    app/landing.css — no Tailwind utilities, per the design spec. */
@@ -25,22 +26,39 @@ function Navbar({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => voi
         <Link href="/" className="snl-logo">
           Sentinel<sup>®</sup>
         </Link>
-        <button
-          className={`snl-menu-btn${open ? " is-open" : ""}`}
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-label={open ? "Close menu" : "Open menu"}
-        >
-          {open ? "Close" : "Menu"}
-          <ChevronUp size={16} className="snl-chev" />
-        </button>
+        <div className="snl-nav-actions">
+          <Show when="signed-out">
+            <Link href="/sign-in" className="snl-nav-link">
+              Sign in
+            </Link>
+            <Link href="/sign-up" className="snl-nav-cta">
+              Start governing
+            </Link>
+          </Show>
+          <Show when="signed-in">
+            <Link href="/overview" className="snl-nav-link">
+              Dashboard
+            </Link>
+            <UserButton
+              appearance={{ elements: { avatarBox: { width: 32, height: 32 } } }}
+            />
+          </Show>
+          <button
+            className={`snl-menu-btn${open ? " is-open" : ""}`}
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-label={open ? "Close menu" : "Open menu"}
+          >
+            {open ? "Close" : "Menu"}
+            <ChevronUp size={16} className="snl-chev" />
+          </button>
+        </div>
       </div>
     </nav>
   );
 }
 
 function Drawer({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  const { session } = useAuth();
   return (
     <div className={`snl-drawer${open ? " is-open" : ""}`}>
       <div className="snl-drawer-links">
@@ -55,9 +73,16 @@ function Drawer({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => voi
             </Link>
           ),
         )}
-        <Link href={session ? "/overview" : "/login"} onClick={() => setOpen(false)}>
-          {session ? "Dashboard" : "Sign in"}
-        </Link>
+        <Show when="signed-out">
+          <Link href="/sign-in" onClick={() => setOpen(false)}>
+            Sign in
+          </Link>
+        </Show>
+        <Show when="signed-in">
+          <Link href="/overview" onClick={() => setOpen(false)}>
+            Dashboard
+          </Link>
+        </Show>
       </div>
       <div className="snl-drawer-footer">
         <span>© 2026 Sentinel</span>
