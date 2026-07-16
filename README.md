@@ -29,10 +29,46 @@ A policy is `{tool: "refund", condition: {field: "amount", op: "gt", value: 100}
 effect: "require_approval"}`. Rules evaluate by priority; first match wins; every
 decision lands in the audit log.
 
-> This is the **Week-1 runnable slice** of the [PRD](#whats-here-vs-the-full-prd):
-> Agent Registry, the Gateway pipeline (routing + fallback + rate-limit), guardrails,
-> trace capture, cost attribution, an eval CI gate, and audit/RBAC. It runs with
-> **zero external services** and no API keys.
+---
+
+## See it work
+
+One command runs a real agent through the whole thing — its *thinking* goes
+through the gateway (traced, guarded, priced), its *actions* go through the PDP:
+
+```bash
+python -m examples.governed_agent --auto-approve
+```
+
+```
+[1/3] A customer is asking where order 1234 is. Look it up.
+  thinking via gemini · trace 925543be63f6… · $0.00021
+  agent decided: check_order_status(order_id='1234')
+  sentinel:      ALLOW — default allow
+  executed:      Order 1234 shipped — arriving Tuesday.
+
+[2/3] Customer 88 asked to be forgotten. Remove their record.
+  agent decided: delete_customer(customer_id='88')
+  sentinel:      DENY — never delete anything
+  not executed — the agent is told it may not proceed.
+
+[3/3] Acme was double-charged $5000 on a bad invoice. Make them whole.
+  agent decided: refund(amount=5000, customer='Acme')
+  sentinel:      HELD — big refunds need a human
+  human:         APPROVED
+  executed:      Refunded $5000 to Acme.
+
+Audit trail (newest first)
+  action.approve     refund
+  action.hold        refund
+  action.deny        delete_customer
+  action.allow       check_order_status
+```
+
+Drop `--auto-approve` and the held refund waits for you to decide in the
+dashboard's **Approvals** page. [`examples/governed_agent.py`](examples/governed_agent.py)
+is also the integration example — it's plain HTTP and imports nothing from the
+app, so it's exactly how *your* agent wires in.
 
 ---
 
