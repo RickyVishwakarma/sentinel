@@ -6,18 +6,33 @@ import { useEffect, useState } from "react";
 import { ProviderStatus, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
+/* Luminous Horizon theme, applied to the app chrome:
+   warm off-white canvas, glassy blurred surfaces, sunset-orange accent. */
+
+const ON = "#1d1c15";
+const VAR = "#56423c";
+const MUTED = "#89726b";
+const PRIMARY = "#FF5E3A";
+
+export const glass =
+  "border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_8px_32px_rgba(159,65,34,0.05)]";
+
 export function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    ok: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    blocked: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    pending_approval: "bg-violet-500/10 text-violet-400 border-violet-500/30",
-    denied: "bg-red-500/10 text-red-400 border-red-500/30",
-    error: "bg-red-500/10 text-red-400 border-red-500/30",
+    ok: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
+    allow: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
+    approved: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
+    blocked: "bg-amber-500/15 text-amber-700 border-amber-600/25",
+    pending: "bg-violet-500/10 text-violet-700 border-violet-600/25",
+    pending_approval: "bg-violet-500/10 text-violet-700 border-violet-600/25",
+    denied: "bg-red-500/10 text-red-700 border-red-600/25",
+    deny: "bg-red-500/10 text-red-700 border-red-600/25",
+    error: "bg-red-500/10 text-red-700 border-red-600/25",
   };
   return (
     <span
-      className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
-        styles[status] ?? "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
+      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+        styles[status] ?? "border-[#ddc0b8]/60 bg-black/5 text-[#56423c]"
       }`}
     >
       {status}
@@ -27,24 +42,28 @@ export function StatusPill({ status }: { status: string }) {
 
 export function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
-      <div className="text-[11px] uppercase tracking-widest text-zinc-500">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-zinc-100">{value}</div>
-      {sub && <div className="mt-1 text-xs text-zinc-500">{sub}</div>}
+    <div className={`rounded-2xl p-5 ${glass}`}>
+      <div className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>
+        {label}
+      </div>
+      <div className="mt-1.5 text-3xl font-extrabold tracking-tight" style={{ color: ON }}>
+        {value}
+      </div>
+      {sub && <div className="mt-1 text-xs" style={{ color: MUTED }}>{sub}</div>}
     </div>
   );
 }
 
 export function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono text-xs text-zinc-400">{children}</span>;
+  return <span className="font-mono text-xs" style={{ color: VAR }}>{children}</span>;
 }
 
 export function ErrorBox({ error }: { error: string }) {
   return (
-    <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-300">
-      <p className="font-medium">Could not reach the gateway</p>
-      <p className="mt-1 font-mono text-xs">{error}</p>
-      <p className="mt-2 text-xs text-red-400/80">
+    <div className="rounded-2xl border border-[#ba1a1a]/20 bg-[#ffdad6]/40 p-5 text-sm backdrop-blur-xl">
+      <p className="font-semibold text-[#93000a]">Could not reach the gateway</p>
+      <p className="mt-1 font-mono text-xs text-[#93000a]/80">{error}</p>
+      <p className="mt-2 text-xs text-[#93000a]/70">
         Is the gateway running? <span className="font-mono">uvicorn app.main:app</span>
       </p>
     </div>
@@ -52,7 +71,7 @@ export function ErrorBox({ error }: { error: string }) {
 }
 
 export function Loading() {
-  return <div className="p-8 text-sm text-zinc-500">Loading…</div>;
+  return <div className="p-8 text-sm" style={{ color: MUTED }}>Loading…</div>;
 }
 
 const NAV = [
@@ -80,13 +99,15 @@ function ProviderBadge() {
   const onlyTemplate = real.length === 0;
   return (
     <span
-      title={onlyTemplate
-        ? "No model key configured — running on the deterministic template provider. Add ANTHROPIC_API_KEY for real answers."
-        : `Live providers: ${real.join(", ")}`}
-      className={`rounded-full border px-2 py-0.5 text-xs ${
+      title={
         onlyTemplate
-          ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          ? "No model key configured — running on the deterministic template provider. Add a provider key for real answers."
+          : `Live providers: ${real.join(", ")}`
+      }
+      className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+        onlyTemplate
+          ? "border-amber-600/25 bg-amber-500/15 text-amber-700"
+          : "border-emerald-600/25 bg-emerald-500/10 text-emerald-700"
       }`}
     >
       {onlyTemplate ? "template mode" : `live: ${real.join(", ")}`}
@@ -107,37 +128,68 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   // Landing + login render bare (their own layout, no app chrome / no guard).
   if (isPublic) return <>{children}</>;
-  if (loading) return <div className="p-10 text-sm text-zinc-500">Loading…</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#fff9ee] p-10 text-sm" style={{ color: MUTED }}>
+        Loading…
+      </div>
+    );
   if (!session) return null; // redirecting
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200">
-      <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+    <div
+      style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
+      className="relative min-h-screen bg-[#fff9ee]"
+    >
+      {/* soft atmospheric wash, matching the landing */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-[#38BDF8]/10 via-[#C084FC]/5 to-transparent" />
+
+      <header className="sticky top-0 z-20 border-b border-white/60 bg-white/50 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-3">
           <Link href="/overview" className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-400" />
-            <span className="text-sm font-semibold tracking-wide text-zinc-100">SENTINEL</span>
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#FF5E3A] to-[#FF2A6D] text-white">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <span className="text-base font-extrabold tracking-tight" style={{ color: ON }}>
+              Sentinel
+            </span>
           </Link>
+
           <nav className="flex flex-wrap gap-1 text-sm">
-            {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={`rounded px-3 py-1.5 transition-colors ${
-                  pathname === n.href || (n.href !== "/overview" && pathname.startsWith(n.href))
-                    ? "bg-zinc-800 text-zinc-100"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-                }`}
-              >
-                {n.label}
-              </Link>
-            ))}
+            {NAV.map((n) => {
+              const active =
+                pathname === n.href || (n.href !== "/overview" && pathname.startsWith(n.href));
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={`rounded-full px-3.5 py-1.5 font-medium transition-colors ${
+                    active
+                      ? "border border-white/70 bg-white/80 shadow-sm"
+                      : "hover:bg-white/50"
+                  }`}
+                  style={{ color: active ? PRIMARY : VAR }}
+                >
+                  {n.label}
+                </Link>
+              );
+            })}
           </nav>
+
           <div className="ml-auto flex items-center gap-3">
             <ProviderBadge />
             <div className="hidden text-right sm:block">
-              <div className="text-xs text-zinc-300">{session.email}</div>
-              <div className="text-[10px] uppercase tracking-widest text-zinc-500">
+              <div className="text-xs font-semibold" style={{ color: ON }}>
+                {session.email}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>
                 {session.tenant} · {session.role}
               </div>
             </div>
@@ -146,14 +198,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 logout();
                 router.replace("/login");
               }}
-              className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900"
+              className="rounded-full border border-white/70 bg-white/50 px-4 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-white/80"
+              style={{ color: VAR }}
             >
               Sign out
             </button>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );
 }

@@ -57,7 +57,7 @@ function NewAgentForm({ onCreated }: { onCreated: () => void }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400"
+        className="rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c]"
       >
         + New agent
       </button>
@@ -65,60 +65,60 @@ function NewAgentForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-900/60 p-4">
+    <div className="space-y-3 rounded-lg border border-[#ddc0b8]/70 bg-white/60 backdrop-blur-xl p-4">
       <div className="flex gap-3">
-        <label className="flex-1 text-xs text-zinc-400">
+        <label className="flex-1 text-xs text-[#56423c]">
           Name
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="support-bot"
-            className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+            className="mt-1 block w-full rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
           />
         </label>
-        <label className="flex-1 text-xs text-zinc-400">
+        <label className="flex-1 text-xs text-[#56423c]">
           Model
           <input
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-100"
+            className="mt-1 block w-full rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 font-mono text-xs text-[#1d1c15]"
           />
         </label>
       </div>
-      <label className="block text-xs text-zinc-400">
+      <label className="block text-xs text-[#56423c]">
         System prompt
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          className="mt-1 block w-full rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
         />
       </label>
       <div className="flex flex-wrap gap-3">
         {ALL_GUARDRAILS.map(([id, label]) => (
-          <label key={id} className="flex items-center gap-1.5 text-xs text-zinc-400">
+          <label key={id} className="flex items-center gap-1.5 text-xs text-[#56423c]">
             <input
               type="checkbox"
               checked={guardrails.includes(id)}
               onChange={() => toggle(id)}
-              className="accent-sky-500"
+              className="accent-[#FF5E3A]"
             />
             {label}
           </label>
         ))}
       </div>
-      {err && <p className="font-mono text-xs text-red-400">{err}</p>}
+      {err && <p className="font-mono text-xs text-red-600">{err}</p>}
       <div className="flex gap-2">
         <button
           onClick={create}
           disabled={busy || !name.trim()}
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400 disabled:opacity-50"
+          className="rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c] disabled:opacity-50"
         >
           {busy ? "Creating…" : "Create agent"}
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-900"
+          className="rounded border border-[#ddc0b8]/70 px-4 py-2 text-sm text-[#56423c] hover:bg-white/60"
         >
           Cancel
         </button>
@@ -202,38 +202,38 @@ function Playground({ agent }: { agent: AgentOut }) {
   }
 
   return (
-    <div className="mt-3 space-y-3 border-t border-zinc-800 pt-3">
+    <div className="mt-3 space-y-3 border-t border-[#ddc0b8]/50 pt-3">
       <div className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !busy && run()}
           placeholder="Send an input through the gateway…"
-          className="flex-1 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600"
+          className="flex-1 rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15] placeholder:text-[#a2938c]"
         />
         <button
           onClick={run}
           disabled={busy || !input.trim()}
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400 disabled:opacity-50"
+          className="rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c] disabled:opacity-50"
         >
           {busy ? "Streaming…" : "Run"}
         </button>
       </div>
-      {err && <p className="font-mono text-xs text-red-400">{err}</p>}
+      {err && <p className="font-mono text-xs text-red-600">{err}</p>}
       {(output || result) && (
-        <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+        <div className="space-y-2 rounded-lg border border-[#ddc0b8]/50 bg-white/70 p-4">
           <pre
             ref={outRef}
-            className="max-h-64 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-zinc-300"
+            className="max-h-64 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-[#3a2f2a]"
           >
             {output}
-            {busy && <span className="animate-pulse text-sky-400">▍</span>}
+            {busy && <span className="animate-pulse text-[#FF5E3A]">▍</span>}
           </pre>
           {result && (
-            <div className="flex flex-wrap items-center gap-3 border-t border-zinc-800 pt-2 text-xs text-zinc-500">
+            <div className="flex flex-wrap items-center gap-3 border-t border-[#ddc0b8]/50 pt-2 text-xs text-[#89726b]">
               <StatusPill status={result.status} />
               {result.streamed && (
-                <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-sky-400">
+                <span className="rounded-full border border-[#FF5E3A]/30 bg-[#FF5E3A]/10 px-2 py-0.5 text-[#FF5E3A]">
                   streamed
                 </span>
               )}
@@ -242,14 +242,14 @@ function Playground({ agent }: { agent: AgentOut }) {
               <span>${result.cost.toFixed(5)}</span>
               <span>{result.latencyMs} ms</span>
               {result.approvalId && (
-                <Link href="/approvals" className="text-amber-400 hover:underline">
+                <Link href="/approvals" className="text-amber-600 hover:underline">
                   Held — review in Approvals →
                 </Link>
               )}
               {result.runId && (
                 <Link
                   href={`/runs/${result.runId}`}
-                  className="ml-auto text-sky-400 hover:underline"
+                  className="ml-auto text-[#FF5E3A] hover:underline"
                 >
                   View trace →
                 </Link>
@@ -257,7 +257,7 @@ function Playground({ agent }: { agent: AgentOut }) {
             </div>
           )}
           {result && result.violations.length > 0 && (
-            <pre className="whitespace-pre-wrap rounded bg-amber-500/5 p-2 font-mono text-xs text-amber-400">
+            <pre className="whitespace-pre-wrap rounded bg-amber-500/5 p-2 font-mono text-xs text-amber-600">
               {JSON.stringify(result.violations, null, 2)}
             </pre>
           )}
@@ -287,8 +287,8 @@ function FreezeButton({ agent, onChanged }: { agent: AgentOut; onChanged: () => 
       title={agent.frozen ? "Resume: allow actions again" : "Kill switch: deny all actions"}
       className={`rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
         agent.frozen
-          ? "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
-          : "border-red-500/40 text-red-400 hover:bg-red-500/10"
+          ? "border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+          : "border-red-500/40 text-red-600 hover:bg-red-500/10"
       }`}
     >
       {busy ? "…" : agent.frozen ? "Unfreeze" : "Freeze"}
@@ -304,33 +304,33 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-zinc-100">Agents</h1>
+      <h1 className="text-lg font-semibold text-[#1d1c15]">Agents</h1>
       <NewAgentForm onCreated={refresh} />
       {agents.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+        <div className="rounded-lg border border-dashed border-[#ddc0b8]/70 bg-white/50 backdrop-blur-xl p-8 text-center text-sm text-[#56423c]">
           <p>No agents yet — create your first one above.</p>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-[#89726b]">
             Give it a name, a system prompt, and pick guardrails. Then send it a message from the
             playground to watch the full pipeline run.
           </p>
         </div>
       ) : (
         agents.map((a) => (
-          <div key={a.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+          <div key={a.id} className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-4">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-zinc-100">{a.name}</span>
-              <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400">
+              <span className="text-sm font-medium text-[#1d1c15]">{a.name}</span>
+              <span className="rounded-full border border-[#ddc0b8]/70 px-2 py-0.5 text-xs text-[#56423c]">
                 v{a.current_version}
               </span>
               {a.frozen && (
-                <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs text-red-400">
+                <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs text-red-600">
                   frozen
                 </span>
               )}
               <Mono>{a.id}</Mono>
               <div className="ml-auto flex items-center gap-3">
                 <FreezeButton agent={a} onChanged={refresh} />
-                <Link href={`/evals?agent=${a.id}`} className="text-xs text-sky-400 hover:underline">
+                <Link href={`/evals?agent=${a.id}`} className="text-xs text-[#FF5E3A] hover:underline">
                   Eval history →
                 </Link>
               </div>

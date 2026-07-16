@@ -45,8 +45,8 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
   const isAction = item.kind === "action";
   return (
     <div
-      className={`rounded-lg border bg-zinc-900/60 p-4 ${
-        isAction ? "border-violet-500/30" : "border-zinc-800"
+      className={`rounded-lg border bg-white/60 backdrop-blur-xl p-4 ${
+        isAction ? "border-violet-500/30" : "border-[#ddc0b8]/50"
       }`}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -54,17 +54,17 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
           className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${
             isAction
               ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
-              : "border-zinc-700 bg-zinc-800/60 text-zinc-400"
+              : "border-[#ddc0b8]/70 bg-black/10/60 text-[#56423c]"
           }`}
         >
           {isAction ? "action" : "output"}
         </span>
         <StatusPill status={item.status} />
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-[#89726b]">
           {item.created_at ? new Date(item.created_at).toLocaleString() : "—"}
         </span>
         {item.run_id && (
-          <Link href={`/runs/${item.run_id}`} className="text-xs text-sky-400 hover:underline">
+          <Link href={`/runs/${item.run_id}`} className="text-xs text-[#FF5E3A] hover:underline">
             View trace →
           </Link>
         )}
@@ -73,14 +73,14 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
             <button
               onClick={() => decide("approve")}
               disabled={busy !== null}
-              className="rounded bg-emerald-500 px-3 py-1.5 text-xs font-medium text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+              className="rounded bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
             >
               {busy === "approve" ? "…" : "Approve"}
             </button>
             <button
               onClick={() => decide("deny")}
               disabled={busy !== null}
-              className="rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-zinc-950 hover:bg-red-400 disabled:opacity-50"
+              className="rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-400 disabled:opacity-50"
             >
               {busy === "deny" ? "…" : "Deny"}
             </button>
@@ -91,13 +91,13 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
       <div className="mt-3 space-y-2 text-xs">
         {isAction && (
           <div>
-            <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
+            <div className="mb-1 text-[10px] uppercase tracking-widest text-[#89726b]">
               Pending action
             </div>
-            <div className="rounded bg-zinc-950 p-3 font-mono text-zinc-200">
+            <div className="rounded bg-white/70 p-3 font-mono text-[#1d1c15]">
               <span className="text-violet-300">{item.tool}</span>(
               {item.arguments && Object.keys(item.arguments).length > 0 ? (
-                <span className="text-zinc-400">
+                <span className="text-[#56423c]">
                   {Object.entries(item.arguments)
                     .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
                     .join(", ")}
@@ -108,35 +108,35 @@ function ApprovalCard({ item, onDecided }: { item: ApprovalItem; onDecided: () =
           </div>
         )}
         <div>
-          <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
+          <div className="mb-1 text-[10px] uppercase tracking-widest text-[#89726b]">
             {isAction ? "Held by policy" : "Flagged because"}
           </div>
           {item.reason.map((r, i) => (
-            <div key={i} className="text-amber-400">
+            <div key={i} className="text-amber-600">
               <span className="font-medium">{r.guardrail ?? "policy"}</span>
-              <span className="text-zinc-500"> — {r.detail}</span>
+              <span className="text-[#89726b]"> — {r.detail}</span>
             </div>
           ))}
         </div>
         {item.held_output !== null && item.held_output !== "" && (
           <div>
-            <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
+            <div className="mb-1 text-[10px] uppercase tracking-widest text-[#89726b]">
               Held output
             </div>
-            <pre className="whitespace-pre-wrap rounded bg-zinc-950 p-3 font-mono text-zinc-300">
+            <pre className="whitespace-pre-wrap rounded bg-white/70 p-3 font-mono text-[#3a2f2a]">
               {item.held_output}
             </pre>
           </div>
         )}
         {item.decided_by && (
-          <div className="text-zinc-500">
+          <div className="text-[#89726b]">
             decided by <Mono>{item.decided_by.slice(0, 12)}…</Mono>
             {item.decided_at ? ` at ${new Date(item.decided_at).toLocaleString()}` : ""}
             {item.note ? ` — “${item.note}”` : ""}
           </div>
         )}
       </div>
-      {err && <p className="mt-2 font-mono text-xs text-red-400">{err}</p>}
+      {err && <p className="mt-2 font-mono text-xs text-red-600">{err}</p>}
     </div>
   );
 }
@@ -153,24 +153,24 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-100">
+        <h1 className="text-lg font-semibold text-[#1d1c15]">
           Approvals{" "}
           {pending.length > 0 && (
-            <span className="ml-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs text-sky-400">
+            <span className="ml-1 rounded-full border border-[#FF5E3A]/30 bg-[#FF5E3A]/10 px-2 py-0.5 text-xs text-[#FF5E3A]">
               {pending.length} pending
             </span>
           )}
         </h1>
         <button
           onClick={refresh}
-          className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900"
+          className="rounded border border-[#ddc0b8]/70 px-3 py-1.5 text-xs text-[#56423c] hover:bg-white/60"
         >
           Refresh
         </button>
       </div>
 
       {data.entries.length === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
+        <div className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-8 text-sm text-[#89726b]">
           Nothing here. Items land in this queue when a{" "}
           <span className="text-violet-300">policy</span> holds a tool call for approval,
           or a flag-level guardrail fires on an agent with <Mono>hitl_approval</Mono> enabled.
@@ -182,7 +182,7 @@ export default function ApprovalsPage() {
           ))}
           {decided.length > 0 && (
             <>
-              <h2 className="pt-2 text-sm font-medium text-zinc-400">Decided</h2>
+              <h2 className="pt-2 text-sm font-medium text-[#56423c]">Decided</h2>
               {decided.map((e) => (
                 <ApprovalCard key={e.id} item={e} onDecided={refresh} />
               ))}

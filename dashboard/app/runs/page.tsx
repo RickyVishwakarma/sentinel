@@ -29,10 +29,10 @@ export default function RunsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-100">Runs</h1>
+        <h1 className="text-lg font-semibold text-[#1d1c15]">Runs</h1>
         <button
           onClick={refresh}
-          className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-900"
+          className="rounded border border-[#ddc0b8]/70 px-3 py-1.5 text-xs text-[#56423c] hover:bg-white/60"
         >
           Refresh
         </button>
@@ -50,17 +50,17 @@ export default function RunsPage() {
       </div>
 
       {total === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
+        <div className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-8 text-sm text-[#89726b]">
           No runs yet. Fire one at the gateway or use the playground on the{" "}
-          <Link href="/agents" className="text-sky-400 hover:underline">
+          <Link href="/agents" className="text-[#FF5E3A] hover:underline">
             Agents
           </Link>{" "}
           page.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+        <div className="overflow-x-auto rounded-lg border border-[#ddc0b8]/50">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-900 text-[11px] uppercase tracking-widest text-zinc-500">
+            <thead className="bg-white/50 text-[11px] uppercase tracking-widest text-[#89726b]">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Time</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
@@ -71,19 +71,19 @@ export default function RunsPage() {
                 <th className="px-4 py-2.5 font-medium">Trace</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/80">
+            <tbody className="divide-y divide-[#ddc0b8]/40">
               {runs.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-2.5 text-zinc-400">{fmtTime(r.created_at)}</td>
+                <tr key={r.id} className="hover:bg-white/50">
+                  <td className="px-4 py-2.5 text-[#56423c]">{fmtTime(r.created_at)}</td>
                   <td className="px-4 py-2.5">
                     <StatusPill status={r.status} />
                   </td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.provider ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.total_tokens}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">${r.cost.toFixed(4)}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.latency_ms} ms</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{r.provider ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{r.total_tokens}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">${r.cost.toFixed(4)}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{r.latency_ms} ms</td>
                   <td className="px-4 py-2.5">
-                    <Link href={`/runs/${r.id}`} className="text-sky-400 hover:underline">
+                    <Link href={`/runs/${r.id}`} className="text-[#FF5E3A] hover:underline">
                       <Mono>{r.trace_id.slice(0, 12)}…</Mono>
                     </Link>
                   </td>

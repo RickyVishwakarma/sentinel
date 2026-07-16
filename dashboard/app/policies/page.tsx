@@ -5,8 +5,8 @@ import { AgentOut, Policy, apiFetch, useApi } from "@/lib/api";
 import { ErrorBox, Loading, Mono } from "@/components/ui";
 
 const EFFECT_STYLES: Record<string, string> = {
-  allow: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-  deny: "border-red-500/30 bg-red-500/10 text-red-400",
+  allow: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+  deny: "border-red-500/30 bg-red-500/10 text-red-600",
   require_approval: "border-violet-500/30 bg-violet-500/10 text-violet-300",
 };
 
@@ -65,7 +65,7 @@ function NewPolicyForm({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400"
+        className="rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c]"
       >
         + New policy
       </button>
@@ -73,44 +73,44 @@ function NewPolicyForm({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-900/60 p-4">
+    <div className="space-y-3 rounded-lg border border-[#ddc0b8]/70 bg-white/60 backdrop-blur-xl p-4">
       <div className="flex flex-wrap gap-3">
-        <label className="text-xs text-zinc-400">
+        <label className="text-xs text-[#56423c]">
           Tool (glob)
           <input
             value={tool}
             onChange={(e) => setTool(e.target.value)}
             placeholder="refund, delete_*, *"
-            className="mt-1 block w-40 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-100"
+            className="mt-1 block w-40 rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 font-mono text-xs text-[#1d1c15]"
           />
         </label>
-        <label className="text-xs text-zinc-400">
+        <label className="text-xs text-[#56423c]">
           Effect
           <select
             value={effect}
             onChange={(e) => setEffect(e.target.value as typeof effect)}
-            className="mt-1 block rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+            className="mt-1 block rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
           >
             <option value="allow">allow</option>
             <option value="deny">deny</option>
             <option value="require_approval">require_approval</option>
           </select>
         </label>
-        <label className="text-xs text-zinc-400">
+        <label className="text-xs text-[#56423c]">
           Priority
           <input
             type="number"
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value))}
-            className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+            className="mt-1 block w-24 rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
           />
         </label>
-        <label className="text-xs text-zinc-400">
+        <label className="text-xs text-[#56423c]">
           Scope
           <select
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
-            className="mt-1 block rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+            className="mt-1 block rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
           >
             <option value="">All agents</option>
             {agents.map((a) => (
@@ -122,8 +122,8 @@ function NewPolicyForm({
         </label>
       </div>
 
-      <label className="flex items-center gap-2 text-xs text-zinc-400">
-        <input type="checkbox" checked={useCond} onChange={(e) => setUseCond(e.target.checked)} className="accent-sky-500" />
+      <label className="flex items-center gap-2 text-xs text-[#56423c]">
+        <input type="checkbox" checked={useCond} onChange={(e) => setUseCond(e.target.checked)} className="accent-[#FF5E3A]" />
         Only when a condition on the arguments holds
       </label>
       {useCond && (
@@ -132,12 +132,12 @@ function NewPolicyForm({
             value={field}
             onChange={(e) => setField(e.target.value)}
             placeholder="field (e.g. amount)"
-            className="w-40 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-100"
+            className="w-40 rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 font-mono text-xs text-[#1d1c15]"
           />
           <select
             value={op}
             onChange={(e) => setOp(e.target.value)}
-            className="rounded border border-zinc-700 bg-zinc-950 px-2 py-2 font-mono text-xs text-zinc-100"
+            className="rounded border border-[#ddc0b8]/70 bg-white/70 px-2 py-2 font-mono text-xs text-[#1d1c15]"
           >
             {OPS.map((o) => (
               <option key={o} value={o}>
@@ -149,33 +149,33 @@ function NewPolicyForm({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="value"
-            className="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-100"
+            className="w-32 rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 font-mono text-xs text-[#1d1c15]"
           />
         </div>
       )}
 
-      <label className="block text-xs text-zinc-400">
+      <label className="block text-xs text-[#56423c]">
         Description
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="why this rule exists"
-          className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+          className="mt-1 block w-full rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-2 text-sm text-[#1d1c15]"
         />
       </label>
 
-      {err && <p className="font-mono text-xs text-red-400">{err}</p>}
+      {err && <p className="font-mono text-xs text-red-600">{err}</p>}
       <div className="flex gap-2">
         <button
           onClick={create}
           disabled={busy || !tool.trim()}
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-sky-400 disabled:opacity-50"
+          className="rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c] disabled:opacity-50"
         >
           {busy ? "Creating…" : "Create policy"}
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:bg-zinc-900"
+          className="rounded border border-[#ddc0b8]/70 px-4 py-2 text-sm text-[#56423c] hover:bg-white/60"
         >
           Cancel
         </button>
@@ -207,23 +207,23 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-zinc-100">Action policies</h1>
-      <p className="-mt-3 text-sm text-zinc-500">
+      <h1 className="text-lg font-semibold text-[#1d1c15]">Action policies</h1>
+      <p className="-mt-3 text-sm text-[#89726b]">
         Rules the gateway enforces when an agent asks to perform a tool call. Evaluated by
         ascending priority; first match wins. Unmatched calls are allowed.
       </p>
       <NewPolicyForm agents={agents.data} onCreated={policies.refresh} />
-      {err && <p className="font-mono text-xs text-red-400">{err}</p>}
+      {err && <p className="font-mono text-xs text-red-600">{err}</p>}
 
       {policies.data.entries.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+        <div className="rounded-lg border border-dashed border-[#ddc0b8]/70 bg-white/50 backdrop-blur-xl p-8 text-center text-sm text-[#56423c]">
           No policies yet. Add one — e.g. <Mono>delete_*</Mono> → deny, or{" "}
           <Mono>refund</Mono> when <Mono>amount &gt; 100</Mono> → require approval.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+        <div className="overflow-x-auto rounded-lg border border-[#ddc0b8]/50">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-900 text-[11px] uppercase tracking-widest text-zinc-500">
+            <thead className="bg-white/50 text-[11px] uppercase tracking-widest text-[#89726b]">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Priority</th>
                 <th className="px-4 py-2.5 font-medium">Tool</th>
@@ -234,12 +234,12 @@ export default function PoliciesPage() {
                 <th className="px-4 py-2.5 font-medium"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/80">
+            <tbody className="divide-y divide-[#ddc0b8]/40">
               {policies.data.entries.map((p) => (
-                <tr key={p.id} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-2.5 font-mono text-xs text-zinc-500">{p.priority}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-zinc-200">{p.tool}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-zinc-400">
+                <tr key={p.id} className="hover:bg-white/50">
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#89726b]">{p.priority}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#1d1c15]">{p.tool}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#56423c]">
                     {p.condition
                       ? `${p.condition.field} ${p.condition.op} ${JSON.stringify(p.condition.value)}`
                       : "—"}
@@ -253,12 +253,12 @@ export default function PoliciesPage() {
                       {p.effect}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-zinc-400">{agentName(p.agent_id)}</td>
-                  <td className="px-4 py-2.5 text-zinc-500">{p.description || "—"}</td>
+                  <td className="px-4 py-2.5 text-[#56423c]">{agentName(p.agent_id)}</td>
+                  <td className="px-4 py-2.5 text-[#89726b]">{p.description || "—"}</td>
                   <td className="px-4 py-2.5">
                     <button
                       onClick={() => remove(p.id)}
-                      className="text-xs text-zinc-500 hover:text-red-400"
+                      className="text-xs text-[#89726b] hover:text-red-600"
                     >
                       Delete
                     </button>

@@ -41,11 +41,11 @@ function groupRuns(entries: EvalHistoryEntry[]): EvalRunRow[] {
 }
 
 function Score({ m }: { m?: { score: number; baseline: number; passed: boolean } }) {
-  if (!m) return <span className="text-zinc-600">—</span>;
+  if (!m) return <span className="text-[#a2938c]">—</span>;
   return (
-    <span className={`font-mono text-xs ${m.passed ? "text-emerald-400" : "text-red-400"}`}>
+    <span className={`font-mono text-xs ${m.passed ? "text-emerald-600" : "text-red-600"}`}>
       {m.score.toFixed(3)}
-      <span className="text-zinc-600"> / {m.baseline.toFixed(2)}</span>
+      <span className="text-[#a2938c]"> / {m.baseline.toFixed(2)}</span>
     </span>
   );
 }
@@ -67,11 +67,11 @@ function EvalsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-zinc-100">Evals</h1>
+        <h1 className="text-lg font-semibold text-[#1d1c15]">Evals</h1>
         <select
           value={agentId ?? ""}
           onChange={(e) => router.push(`/evals?agent=${e.target.value}`)}
-          className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200"
+          className="rounded border border-[#ddc0b8]/70 bg-white/70 px-3 py-1.5 text-sm text-[#1d1c15]"
         >
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
@@ -82,18 +82,18 @@ function EvalsView() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-8 text-sm text-zinc-500">
+        <div className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-8 text-sm text-[#89726b]">
           No eval runs recorded for this agent yet. Run one:
-          <pre className="mt-3 rounded bg-zinc-950 p-3 font-mono text-xs text-zinc-400">
+          <pre className="mt-3 rounded bg-white/70 p-3 font-mono text-xs text-[#56423c]">
             python -m cli.eval_runner --url http://localhost:8000 \
             {"\n"}  --api-key sentinel-demo-key --agent-id {agentId} \
             {"\n"}  --file evals/support-bot.json
           </pre>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+        <div className="overflow-x-auto rounded-lg border border-[#ddc0b8]/50">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-900 text-[11px] uppercase tracking-widest text-zinc-500">
+            <thead className="bg-white/50 text-[11px] uppercase tracking-widest text-[#89726b]">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Time</th>
                 <th className="px-4 py-2.5 font-medium">Version</th>
@@ -106,18 +106,18 @@ function EvalsView() {
                 <th className="px-4 py-2.5 font-medium">Gate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/80">
+            <tbody className="divide-y divide-[#ddc0b8]/40">
               {rows.map((r) => (
-                <tr key={r.key} className="hover:bg-zinc-900/50">
-                  <td className="whitespace-nowrap px-4 py-2.5 text-zinc-400">
+                <tr key={r.key} className="hover:bg-white/50">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-[#56423c]">
                     {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-300">
+                    <span className="rounded-full border border-[#ddc0b8]/70 px-2 py-0.5 text-xs text-[#3a2f2a]">
                       v{r.version}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-zinc-300">{r.eval_set}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{r.eval_set}</td>
                   {METRICS.map((m) => (
                     <td key={m} className="px-4 py-2.5">
                       <Score m={r.metrics[m]} />
@@ -127,8 +127,8 @@ function EvalsView() {
                     <span
                       className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                         r.passed
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-red-500/30 bg-red-500/10 text-red-400"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                          : "border-red-500/30 bg-red-500/10 text-red-600"
                       }`}
                     >
                       {r.passed ? "PASS" : "FAIL"}
@@ -140,7 +140,7 @@ function EvalsView() {
           </table>
         </div>
       )}
-      <p className="text-xs text-zinc-600">
+      <p className="text-xs text-[#a2938c]">
         Scores are shown as <span className="font-mono">score / baseline</span>. A metric below
         its baseline fails the CI gate and blocks the build.
       </p>

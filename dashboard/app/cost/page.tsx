@@ -16,7 +16,7 @@ export default function CostPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-zinc-100">Cost — month to date</h1>
+      <h1 className="text-lg font-semibold text-[#1d1c15]">Cost — month to date</h1>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Card label="Total cost" value={`$${data.total_cost.toFixed(4)}`} />
@@ -24,24 +24,24 @@ export default function CostPage() {
         <Card label="Cap used" value={`${capUsed.toFixed(2)}%`} />
       </div>
 
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
-        <div className="mb-1 flex justify-between text-xs text-zinc-500">
+      <div className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-4">
+        <div className="mb-1 flex justify-between text-xs text-[#89726b]">
           <span>Cap usage</span>
           <span>
             ${data.total_cost.toFixed(4)} / ${data.monthly_cost_cap.toFixed(2)}
           </span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+        <div className="h-2 overflow-hidden rounded-full bg-black/10">
           <div
-            className={`h-full rounded-full ${capUsed > 80 ? "bg-amber-400" : "bg-sky-400"}`}
+            className={`h-full rounded-full ${capUsed > 80 ? "bg-amber-400" : "bg-[#FF5E3A]"}`}
             style={{ width: `${Math.max(capUsed, 0.5)}%` }}
           />
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-[#ddc0b8]/50">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-900 text-[11px] uppercase tracking-widest text-zinc-500">
+          <thead className="bg-white/50 text-[11px] uppercase tracking-widest text-[#89726b]">
             <tr>
               <th className="px-4 py-2.5 font-medium">Agent</th>
               <th className="px-4 py-2.5 font-medium">Runs</th>
@@ -50,26 +50,26 @@ export default function CostPage() {
               <th className="w-1/3 px-4 py-2.5 font-medium"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/80">
+          <tbody className="divide-y divide-[#ddc0b8]/40">
             {data.by_agent.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                <td colSpan={5} className="px-4 py-6 text-[#89726b]">
                   No runs this month.
                 </td>
               </tr>
             ) : (
               data.by_agent.map((a) => (
-                <tr key={a.agent_id} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-2.5 text-zinc-200">{a.agent}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{a.runs}</td>
-                  <td className="px-4 py-2.5 text-zinc-300">{a.tokens}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-zinc-300">
+                <tr key={a.agent_id} className="hover:bg-white/50">
+                  <td className="px-4 py-2.5 text-[#1d1c15]">{a.agent}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{a.runs}</td>
+                  <td className="px-4 py-2.5 text-[#3a2f2a]">{a.tokens}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#3a2f2a]">
                     ${a.cost.toFixed(5)}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-black/10">
                       <div
-                        className="h-full rounded-full bg-sky-400"
+                        className="h-full rounded-full bg-[#FF5E3A]"
                         style={{ width: `${(a.cost / maxCost) * 100}%` }}
                       />
                     </div>
