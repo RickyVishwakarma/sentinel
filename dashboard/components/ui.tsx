@@ -6,33 +6,33 @@ import { useEffect, useState } from "react";
 import { ProviderStatus, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
-/* Luminous Horizon theme, applied to the app chrome:
-   warm off-white canvas, glassy blurred surfaces, sunset-orange accent. */
+/* Black-and-white minimal — the same system as the landing:
+   white canvas, near-black text, Inter, tight negative letter-spacing,
+   hairline borders, pill controls. */
 
-const ON = "#1d1c15";
-const VAR = "#56423c";
-const MUTED = "#89726b";
-const PRIMARY = "#FF5E3A";
+const TEXT = "#0a0a0a";
+const MUTED = "#6b6b6b";
+const BORDER = "rgba(0,0,0,0.08)";
 
-export const glass =
-  "border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_8px_32px_rgba(159,65,34,0.05)]";
+const FONT = { fontFamily: "var(--font-inter), system-ui, sans-serif" } as const;
 
 export function StatusPill({ status }: { status: string }) {
+  // Meaning still needs colour — but muted, to sit inside a B&W system.
   const styles: Record<string, string> = {
-    ok: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
-    allow: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
-    approved: "bg-emerald-500/10 text-emerald-700 border-emerald-600/25",
-    blocked: "bg-amber-500/15 text-amber-700 border-amber-600/25",
-    pending: "bg-violet-500/10 text-violet-700 border-violet-600/25",
-    pending_approval: "bg-violet-500/10 text-violet-700 border-violet-600/25",
-    denied: "bg-red-500/10 text-red-700 border-red-600/25",
-    deny: "bg-red-500/10 text-red-700 border-red-600/25",
-    error: "bg-red-500/10 text-red-700 border-red-600/25",
+    ok: "border-[rgba(23,201,100,0.3)] bg-[rgba(23,201,100,0.1)] text-[#0a7d3c]",
+    allow: "border-[rgba(23,201,100,0.3)] bg-[rgba(23,201,100,0.1)] text-[#0a7d3c]",
+    approved: "border-[rgba(23,201,100,0.3)] bg-[rgba(23,201,100,0.1)] text-[#0a7d3c]",
+    blocked: "border-[rgba(180,120,0,0.3)] bg-[rgba(180,120,0,0.1)] text-[#6b4700]",
+    pending: "border-[rgba(180,120,0,0.3)] bg-[rgba(180,120,0,0.1)] text-[#6b4700]",
+    pending_approval: "border-[rgba(180,120,0,0.3)] bg-[rgba(180,120,0,0.1)] text-[#6b4700]",
+    denied: "border-[rgba(180,35,24,0.25)] bg-[rgba(180,35,24,0.08)] text-[#b42318]",
+    deny: "border-[rgba(180,35,24,0.25)] bg-[rgba(180,35,24,0.08)] text-[#b42318]",
+    error: "border-[rgba(180,35,24,0.25)] bg-[rgba(180,35,24,0.08)] text-[#b42318]",
   };
   return (
     <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-        styles[status] ?? "border-[#ddc0b8]/60 bg-black/5 text-[#56423c]"
+      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-[-0.01em] ${
+        styles[status] ?? "border-black/10 bg-black/[0.03] text-[#6b6b6b]"
       }`}
     >
       {status}
@@ -42,28 +42,45 @@ export function StatusPill({ status }: { status: string }) {
 
 export function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className={`rounded-2xl p-5 ${glass}`}>
-      <div className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>
+    <div className="rounded-2xl border p-5" style={{ borderColor: BORDER }}>
+      <div
+        className="text-[11px] font-semibold uppercase tracking-[0.08em]"
+        style={{ color: MUTED }}
+      >
         {label}
       </div>
-      <div className="mt-1.5 text-3xl font-extrabold tracking-tight" style={{ color: ON }}>
+      <div
+        className="mt-2 text-3xl font-semibold tracking-[-0.05em]"
+        style={{ color: TEXT }}
+      >
         {value}
       </div>
-      {sub && <div className="mt-1 text-xs" style={{ color: MUTED }}>{sub}</div>}
+      {sub && (
+        <div className="mt-1 text-xs" style={{ color: MUTED }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
 
 export function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono text-xs" style={{ color: VAR }}>{children}</span>;
+  return (
+    <span className="font-mono text-xs tracking-normal" style={{ color: MUTED }}>
+      {children}
+    </span>
+  );
 }
 
 export function ErrorBox({ error }: { error: string }) {
   return (
-    <div className="rounded-2xl border border-[#ba1a1a]/20 bg-[#ffdad6]/40 p-5 text-sm backdrop-blur-xl">
-      <p className="font-semibold text-[#93000a]">Could not reach the gateway</p>
-      <p className="mt-1 font-mono text-xs text-[#93000a]/80">{error}</p>
-      <p className="mt-2 text-xs text-[#93000a]/70">
+    <div
+      className="rounded-2xl border p-5 text-sm"
+      style={{ borderColor: "rgba(180,35,24,0.25)", background: "rgba(180,35,24,0.04)" }}
+    >
+      <p className="font-semibold text-[#b42318]">Could not reach the gateway</p>
+      <p className="mt-1 font-mono text-xs text-[#b42318]/80">{error}</p>
+      <p className="mt-2 text-xs" style={{ color: MUTED }}>
         Is the gateway running? <span className="font-mono">uvicorn app.main:app</span>
       </p>
     </div>
@@ -71,7 +88,11 @@ export function ErrorBox({ error }: { error: string }) {
 }
 
 export function Loading() {
-  return <div className="p-8 text-sm" style={{ color: MUTED }}>Loading…</div>;
+  return (
+    <div className="p-8 text-sm" style={{ color: MUTED }}>
+      Loading…
+    </div>
+  );
 }
 
 const NAV = [
@@ -85,7 +106,8 @@ const NAV = [
   { href: "/audit", label: "Audit" },
 ];
 
-const PUBLIC = ["/", "/login"];
+// Public/marketing routes render bare (own chrome, no auth guard).
+const PUBLIC = ["/", "/login", "/product", "/pricing", "/faq", "/contact"];
 
 function ProviderBadge() {
   const [live, setLive] = useState<string[] | null>(null);
@@ -101,13 +123,13 @@ function ProviderBadge() {
     <span
       title={
         onlyTemplate
-          ? "No model key configured — running on the deterministic template provider. Add a provider key for real answers."
+          ? "No model key configured — running on the deterministic template provider."
           : `Live providers: ${real.join(", ")}`
       }
       className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
         onlyTemplate
-          ? "border-amber-600/25 bg-amber-500/15 text-amber-700"
-          : "border-emerald-600/25 bg-emerald-500/10 text-emerald-700"
+          ? "border-[rgba(180,120,0,0.3)] bg-[rgba(180,120,0,0.1)] text-[#6b4700]"
+          : "border-[rgba(23,201,100,0.3)] bg-[rgba(23,201,100,0.1)] text-[#0a7d3c]"
       }`}
     >
       {onlyTemplate ? "template mode" : `live: ${real.join(", ")}`}
@@ -126,11 +148,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
     if (!isPublic && !loading && !session) router.replace("/login");
   }, [isPublic, loading, session, router]);
 
-  // Landing + login render bare (their own layout, no app chrome / no guard).
   if (isPublic) return <>{children}</>;
   if (loading)
     return (
-      <div className="min-h-screen bg-[#fff9ee] p-10 text-sm" style={{ color: MUTED }}>
+      <div className="min-h-screen bg-white p-10 text-sm" style={{ ...FONT, color: MUTED }}>
         Loading…
       </div>
     );
@@ -138,31 +159,29 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
-      className="relative min-h-screen bg-[#fff9ee]"
+      style={{ ...FONT, color: TEXT, letterSpacing: "-0.02em" }}
+      className="min-h-screen bg-white"
     >
-      {/* soft atmospheric wash, matching the landing */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-[#38BDF8]/10 via-[#C084FC]/5 to-transparent" />
-
-      <header className="sticky top-0 z-20 border-b border-white/60 bg-white/50 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-3">
-          <Link href="/overview" className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#FF5E3A] to-[#FF2A6D] text-white">
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <span className="text-base font-extrabold tracking-tight" style={{ color: ON }}>
-              Sentinel
-            </span>
+      <header
+        className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur-xl"
+        style={{ borderColor: BORDER }}
+      >
+        <div className="mx-auto flex max-w-6xl items-center gap-5 px-6 py-3.5">
+          <Link
+            href="/"
+            className="text-[22px] font-semibold italic tracking-[-0.08em]"
+            style={{ fontFamily: "var(--font-source-serif), Georgia, serif", color: TEXT }}
+          >
+            Sentinel
+            <sup
+              className="ml-0.5 align-super text-[10px] font-semibold not-italic"
+              style={{ fontFamily: "var(--font-inter), sans-serif" }}
+            >
+              ®
+            </sup>
           </Link>
 
-          <nav className="flex flex-wrap gap-1 text-sm">
+          <nav className="flex flex-wrap gap-0.5 text-sm">
             {NAV.map((n) => {
               const active =
                 pathname === n.href || (n.href !== "/overview" && pathname.startsWith(n.href));
@@ -170,12 +189,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={n.href}
                   href={n.href}
-                  className={`rounded-full px-3.5 py-1.5 font-medium transition-colors ${
-                    active
-                      ? "border border-white/70 bg-white/80 shadow-sm"
-                      : "hover:bg-white/50"
+                  className={`rounded-full px-3.5 py-1.5 font-medium tracking-[-0.02em] transition-colors ${
+                    active ? "bg-[#0a0a0a] text-white" : "hover:bg-black/[0.04]"
                   }`}
-                  style={{ color: active ? PRIMARY : VAR }}
+                  style={active ? undefined : { color: MUTED }}
                 >
                   {n.label}
                 </Link>
@@ -186,10 +203,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-3">
             <ProviderBadge />
             <div className="hidden text-right sm:block">
-              <div className="text-xs font-semibold" style={{ color: ON }}>
+              <div className="text-xs font-semibold" style={{ color: TEXT }}>
                 {session.email}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>
+              <div
+                className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: MUTED }}
+              >
                 {session.tenant} · {session.role}
               </div>
             </div>
@@ -198,8 +218,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 logout();
                 router.replace("/login");
               }}
-              className="rounded-full border border-white/70 bg-white/50 px-4 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-white/80"
-              style={{ color: VAR }}
+              className="rounded-full border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04]"
+              style={{ borderColor: BORDER, color: MUTED }}
             >
               Sign out
             </button>
@@ -207,7 +227,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
     </div>
   );
 }

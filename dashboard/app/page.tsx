@@ -1,21 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ChevronUp } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { LandingShell } from "@/components/landing-chrome";
 import "./landing.css";
 
 /* Minimal black-and-white landing. All styling lives in ./landing.css —
    no Tailwind utilities here, per the design spec. */
-
-const NAV_LINKS = [
-  { label: "Policies", href: "/policies" },
-  { label: "Approvals", href: "/approvals" },
-  { label: "Traces", href: "/runs" },
-  { label: "Docs", href: "https://github.com/RickyVishwakarma/sentinel" },
-  { label: "Get in Touch", href: "https://github.com/RickyVishwakarma/sentinel/issues" },
-];
 
 // What the control plane does — the hero ticker.
 const TICKER = [
@@ -68,51 +59,6 @@ function Lines() {
           style={{ height: `${60 + i * 10}px`, animationDelay: `${i * 0.25}s` }}
         />
       ))}
-    </div>
-  );
-}
-
-function Navbar({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  return (
-    <nav className="snl-nav">
-      <div className="snl-nav-inner">
-        <Link href="/" className="snl-logo">
-          Sentinel<sup>®</sup>
-        </Link>
-        <button
-          className={`snl-menu-btn${open ? " is-open" : ""}`}
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-label={open ? "Close menu" : "Open menu"}
-        >
-          {open ? "Close" : "Menu"}
-          <ChevronUp size={16} className="snl-chev" />
-        </button>
-      </div>
-    </nav>
-  );
-}
-
-function Drawer({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  return (
-    <div className={`snl-drawer${open ? " is-open" : ""}`}>
-      <div className="snl-drawer-links">
-        {NAV_LINKS.map((l) =>
-          l.href.startsWith("http") ? (
-            <a key={l.label} href={l.href} target="_blank" rel="noreferrer">
-              {l.label}
-            </a>
-          ) : (
-            <Link key={l.label} href={l.href} onClick={() => setOpen(false)}>
-              {l.label}
-            </Link>
-          ),
-        )}
-      </div>
-      <div className="snl-drawer-footer">
-        <span>© 2026 Sentinel</span>
-        <span>Action governance for AI agents</span>
-      </div>
     </div>
   );
 }
@@ -200,16 +146,13 @@ function TrustedBy() {
 
 export default function Landing() {
   const { session } = useAuth();
-  const [open, setOpen] = useState(false);
   const cta = session ? "/overview" : "/login";
   const ctaLabel = session ? "Open dashboard" : "Start governing";
 
   return (
-    <div className="snl">
-      <Navbar open={open} setOpen={setOpen} />
-      <Drawer open={open} setOpen={setOpen} />
+    <LandingShell>
       <Hero cta={cta} ctaLabel={ctaLabel} />
       <TrustedBy />
-    </div>
+    </LandingShell>
   );
 }

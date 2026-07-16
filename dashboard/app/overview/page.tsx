@@ -23,10 +23,10 @@ export default function OverviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-[#1d1c15]">
+        <h1 className="text-lg font-semibold text-[#0a0a0a]">
           Welcome back{session?.email ? `, ${session.email.split("@")[0]}` : ""}
         </h1>
-        <p className="text-sm text-[#89726b]">
+        <p className="text-sm text-[#6b6b6b]">
           {session?.tenant} · control-plane overview
         </p>
       </div>
@@ -43,14 +43,14 @@ export default function OverviewPage() {
       </div>
 
       {agents.data.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[#ddc0b8]/70 bg-white/50 backdrop-blur-xl p-8 text-center">
-          <p className="text-sm text-[#3a2f2a]">No agents yet.</p>
-          <p className="mt-1 text-xs text-[#89726b]">
+        <div className="rounded-lg border border-dashed border-black/10 bg-white p-8 text-center">
+          <p className="text-sm text-[#0a0a0a]">No agents yet.</p>
+          <p className="mt-1 text-xs text-[#6b6b6b]">
             Register your first agent, then send it a message to see the full pipeline in action.
           </p>
           <Link
             href="/agents"
-            className="mt-4 inline-block rounded bg-[#FF5E3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7a5c]"
+            className="mt-4 inline-block rounded bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-white hover:bg-[#262626]"
           >
             + Create an agent
           </Link>
@@ -58,23 +58,23 @@ export default function OverviewPage() {
       ) : (
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-[#3a2f2a]">Recent runs</h2>
-            <Link href="/runs" className="text-xs text-[#FF5E3A] hover:underline">
+            <h2 className="text-sm font-medium text-[#0a0a0a]">Recent runs</h2>
+            <Link href="/runs" className="text-xs text-[#0a0a0a] hover:underline">
               All runs →
             </Link>
           </div>
           {recent.length === 0 ? (
-            <div className="rounded-lg border border-[#ddc0b8]/50 bg-white/60 backdrop-blur-xl p-6 text-sm text-[#89726b]">
+            <div className="rounded-lg border border-black/[0.08] bg-white p-6 text-sm text-[#6b6b6b]">
               No runs yet — try the playground on the{" "}
-              <Link href="/agents" className="text-[#FF5E3A] hover:underline">
+              <Link href="/agents" className="text-[#0a0a0a] hover:underline">
                 Agents
               </Link>{" "}
               page.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-[#ddc0b8]/50">
+            <div className="overflow-x-auto rounded-lg border border-black/[0.08]">
               <table className="w-full text-left text-sm">
-                <thead className="bg-white/50 text-[11px] uppercase tracking-widest text-[#89726b]">
+                <thead className="bg-[#fbfbfb] text-[11px] uppercase tracking-widest text-[#6b6b6b]">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Status</th>
                     <th className="px-4 py-2.5 font-medium">Provider</th>
@@ -83,17 +83,17 @@ export default function OverviewPage() {
                     <th className="px-4 py-2.5 font-medium">Trace</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ddc0b8]/40">
+                <tbody className="divide-y divide-black/[0.06]">
                   {recent.map((r) => (
-                    <tr key={r.id} className="hover:bg-white/50">
+                    <tr key={r.id} className="hover:bg-[#fbfbfb]">
                       <td className="px-4 py-2.5">
                         <StatusPill status={r.status} />
                       </td>
-                      <td className="px-4 py-2.5 text-[#3a2f2a]">{r.provider ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-[#3a2f2a]">{r.total_tokens}</td>
-                      <td className="px-4 py-2.5 text-[#3a2f2a]">{r.latency_ms} ms</td>
+                      <td className="px-4 py-2.5 text-[#0a0a0a]">{r.provider ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-[#0a0a0a]">{r.total_tokens}</td>
+                      <td className="px-4 py-2.5 text-[#0a0a0a]">{r.latency_ms} ms</td>
                       <td className="px-4 py-2.5">
-                        <Link href={`/runs/${r.id}`} className="text-[#FF5E3A] hover:underline">
+                        <Link href={`/runs/${r.id}`} className="text-[#0a0a0a] hover:underline">
                           <Mono>{r.trace_id.slice(0, 12)}…</Mono>
                         </Link>
                       </td>
