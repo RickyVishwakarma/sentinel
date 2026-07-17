@@ -6,7 +6,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # .env.local carries the Clerk keys pulled by `clerk env pull`; .env holds
+    # everything else. Both are gitignored.
+    model_config = SettingsConfigDict(env_file=(".env", ".env.local"), extra="ignore")
+
+    # ── Clerk (human auth for the dashboard) ──────────────────────────────
+    # Unset → the Clerk exchange endpoint is disabled and the legacy
+    # email/password login remains the only human path.
+    clerk_publishable_key: str | None = None
+    clerk_secret_key: str | None = None
 
     # Persistence
     database_url: str = "sqlite:///./sentinel.db"

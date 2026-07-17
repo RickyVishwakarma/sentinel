@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useClerk } from "@clerk/nextjs";
 import { ProviderStatus, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -141,23 +142,41 @@ function ProviderBadge() {
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session, loading, logout } = useAuth();
+  const { session, loading, error, logout } = useAuth();
+  const { signOut } = useClerk();
   const isPublic =
     PUBLIC.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
-  // Client-side route guard (hooks must run unconditionally — guard inside).
-  useEffect(() => {
-    if (!isPublic && !loading && !session) router.replace("/login");
-  }, [isPublic, loading, session, router]);
-
   if (isPublic) return <>{children}</>;
+
+  // Clerk's middleware already bounces signed-out visitors to /sign-in, so a
+  // missing session here means the key exchange is still in flight or failed —
+  // never a reason to redirect (that's what caused the sign-in loop).
   if (loading)
     return (
       <div className="min-h-screen bg-white p-10 text-sm" style={{ ...FONT, color: MUTED }}>
         Loading…
       </div>
     );
-  if (!session) return null; // redirecting
+
+  if (!session)
+    return (
+      <div
+        className="min-h-screen bg-white p-10"
+        style={{ ...FONT, color: TEXT, letterSpacing: "-0.02em" }}
+      >
+        <div className="mx-auto max-w-lg">
+          <ErrorBox error={error ?? "could not establish a gateway session"} />
+          <button
+            onClick={() => signOut({ redirectUrl: "/" })}
+            className="mt-4 rounded-full border px-4 py-1.5 text-xs font-medium"
+            style={{ borderColor: BORDER, color: MUTED }}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
 
   return (
     <div
@@ -216,9 +235,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <button
-              onClick={() => {
-                logout();
-                router.replace("/login");
+              onClick={async () => {
+                logout(); // clear the cached gateway session first
+                await signOut({ redirectUrl: "/" });
               }}
               className="rounded-full border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04]"
               style={{ borderColor: BORDER, color: MUTED }}

@@ -72,7 +72,11 @@ def _apply_mini_migrations() -> None:
 
     additions = {
         "tenants": [("cost_cap_mode", "VARCHAR DEFAULT 'block'")],
-        "users": [("email", "VARCHAR"), ("password_hash", "VARCHAR")],
+        "users": [
+            ("email", "VARCHAR"),
+            ("password_hash", "VARCHAR"),
+            ("clerk_user_id", "VARCHAR"),
+        ],
         "agents": [("frozen", "BOOLEAN DEFAULT 0")],
         "approvals": [
             ("kind", "VARCHAR DEFAULT 'output'"),

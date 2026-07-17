@@ -1,13 +1,13 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useAuth as useClerkAuth } from "@clerk/nextjs";
 import { apiUrl } from "@/lib/api";
+
+/* Clerk owns the human identity; Sentinel still owns tenant + role.
+   On load we hand Clerk's session token to the gateway, which verifies it and
+   hands back the tenant's API key — the credential every other call already
+   uses. Machines skip all of this and present an API key directly. */
 
 export interface Session {
   api_key: string;
@@ -20,7 +20,7 @@ export interface Session {
 interface AuthState {
   session: Session | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  error: string | null;
   logout: () => void;
 }
 
@@ -38,42 +38,59 @@ function readSession(): Session | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Restore + validate the stored session against the gateway on load.
-    const stored = readSession();
-    if (!stored) {
+    if (!isLoaded) return;
+
+    // Signed out of Clerk → drop any cached gateway session.
+    if (!isSignedIn) {
+      localStorage.removeItem(KEY);
+      setSession(null);
       setLoading(false);
       return;
     }
-    fetch(`${apiUrl()}/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${stored.api_key}` },
-    })
-      .then((r) => (r.ok ? stored : null))
-      .catch(() => stored) // gateway down ≠ logged out; keep the session
-      .then((s) => setSession(s))
-      .finally(() => setLoading(false));
-  }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${apiUrl()}/v1/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      let detail = "login failed";
+    let cancelled = false;
+    (async () => {
       try {
-        detail = (await res.json()).detail ?? detail;
-      } catch {}
-      throw new Error(detail);
-    }
-    const s = (await res.json()) as Session;
-    localStorage.setItem(KEY, JSON.stringify(s));
-    setSession(s);
-  }, []);
+        const token = await getToken();
+        if (!token) throw new Error("no Clerk session token");
+        const res = await fetch(`${apiUrl()}/v1/auth/clerk`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          let detail = res.statusText;
+          try {
+            detail = (await res.json()).detail ?? detail;
+          } catch {}
+          throw new Error(detail);
+        }
+        const s = (await res.json()) as Session;
+        if (cancelled) return;
+        localStorage.setItem(KEY, JSON.stringify(s));
+        setSession(s);
+        setError(null);
+      } catch (e) {
+        if (cancelled) return;
+        // Gateway down? Keep any cached session so the UI can still render and
+        // surface its own error, rather than bouncing to sign-in.
+        const cached = readSession();
+        setSession(cached);
+        if (!cached) setError(String((e as Error).message ?? e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, getToken]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(KEY);
@@ -81,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, login, logout }}>
+    <AuthContext.Provider value={{ session, loading: loading || !isLoaded, error, logout }}>
       {children}
     </AuthContext.Provider>
   );

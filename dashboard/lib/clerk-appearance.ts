@@ -13,7 +13,9 @@ export const clerkAppearance = {
     colorDanger: "#b42318",
     colorSuccess: "#0a7d3c",
     fontFamily: "var(--font-inter), system-ui, sans-serif",
-    borderRadius: "999px",
+    // Applies to inputs/buttons/card alike — a pill value here turns the whole
+    // card into an oval. Keep it modest and pill the controls individually.
+    borderRadius: "10px",
   },
   elements: {
     rootBox: { width: "100%", maxWidth: "400px" },
@@ -23,20 +25,24 @@ export const clerkAppearance = {
       boxShadow: "none",
       letterSpacing: "-0.02em",
     },
+    cardBox: { borderRadius: "24px", boxShadow: "none", border: "none" },
     headerTitle: { fontSize: "24px", fontWeight: 600, letterSpacing: "-0.05em" },
     headerSubtitle: { color: "#6b6b6b" },
     formButtonPrimary: {
       backgroundColor: "#0a0a0a",
+      borderRadius: "999px",
       fontSize: "14px",
       fontWeight: 600,
       letterSpacing: "-0.02em",
       textTransform: "none",
       "&:hover": { backgroundColor: "#262626" },
     },
-    formFieldInput: { borderColor: "rgba(0,0,0,0.1)" },
-    socialButtonsBlockButton: { borderColor: "rgba(0,0,0,0.1)" },
+    formFieldInput: { borderColor: "rgba(0,0,0,0.1)", borderRadius: "999px" },
+    socialButtonsBlockButton: {
+      borderColor: "rgba(0,0,0,0.1)",
+      borderRadius: "999px",
+    },
     footerActionLink: { color: "#0a0a0a", fontWeight: 600 },
-    // The dev-mode ribbon is noise on a design review.
     logoBox: { display: "none" },
   },
 };

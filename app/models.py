@@ -50,6 +50,10 @@ class User(Base):
     api_key: Mapped[str] = mapped_column(String, unique=True, index=True, default=_uuid)
     email: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Set when the human signs in through Clerk; API-key-only users stay null.
+    clerk_user_id: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, nullable=True
+    )
 
     tenant: Mapped[Tenant] = relationship(back_populates="users")
 
