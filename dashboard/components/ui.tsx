@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { UserButton, useClerk, useUser } from "@clerk/nextjs";
 import { ProviderStatus, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -142,8 +142,11 @@ function ProviderBadge() {
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session, loading, error, logout } = useAuth();
+  // AuthProvider drops the cached gateway session as soon as Clerk reports
+  // signed-out, so sign-out needs no extra wiring here.
+  const { session, loading, error } = useAuth();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const isPublic =
     PUBLIC.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
@@ -221,29 +224,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
             <ProviderBadge />
-            <div className="hidden text-right sm:block">
-              <div className="text-xs font-semibold" style={{ color: TEXT }}>
-                {session.email}
+            <div className="hidden max-w-[190px] text-right lg:block">
+              <div className="truncate text-xs font-semibold" style={{ color: TEXT }}>
+                {user?.fullName ?? session.name ?? session.email}
               </div>
               <div
-                className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                className="truncate text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: MUTED }}
+                title={`${session.tenant} · ${session.role}`}
               >
                 {session.tenant} · {session.role}
               </div>
             </div>
-            <button
-              onClick={async () => {
-                logout(); // clear the cached gateway session first
-                await signOut({ redirectUrl: "/" });
-              }}
-              className="rounded-full border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04]"
-              style={{ borderColor: BORDER, color: MUTED }}
-            >
-              Sign out
-            </button>
+            {/* Clerk's own control — real avatar, manage-account, sign out.
+                It clears the cached gateway session on the way out. */}
+            <UserButton
+              appearance={{ elements: { avatarBox: { width: 32, height: 32 } } }}
+            />
           </div>
         </div>
       </header>

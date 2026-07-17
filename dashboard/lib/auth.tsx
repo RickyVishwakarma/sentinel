@@ -12,6 +12,8 @@ import { apiUrl } from "@/lib/api";
 export interface Session {
   api_key: string;
   email: string;
+  name?: string | null;
+  avatar_url?: string | null;
   role: string;
   tenant: string;
   tenant_id: string;

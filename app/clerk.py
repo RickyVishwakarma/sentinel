@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import base64
 import time
+from dataclasses import dataclass
 from functools import lru_cache
 
+import httpx
 import jwt
 from jwt import PyJWKClient
 
@@ -88,3 +90,52 @@ def verify_session_token(token: str) -> dict:
     if claims.get("exp", 0) < time.time() - 5:
         raise ClerkError("Clerk session token has expired")
     return claims
+
+
+@dataclass
+class ClerkProfile:
+    email: str | None
+    full_name: str | None
+    avatar_url: str | None
+
+
+def fetch_profile(clerk_user_id: str) -> ClerkProfile:
+    """Look up a Clerk user's real identity via the Backend API.
+
+    Session tokens carry only `sub` unless a custom JWT template adds more, so
+    the name/email/avatar have to be fetched. Best-effort: if the call fails we
+    return empties and the caller falls back, rather than blocking sign-in.
+    """
+    secret = get_settings().clerk_secret_key
+    if not secret:
+        return ClerkProfile(None, None, None)
+    try:
+        with httpx.Client(timeout=10) as client:
+            r = client.get(
+                f"https://api.clerk.com/v1/users/{clerk_user_id}",
+                headers={"Authorization": f"Bearer {secret}"},
+            )
+            r.raise_for_status()
+            u = r.json()
+    except (httpx.HTTPError, ValueError):
+        return ClerkProfile(None, None, None)
+
+    primary_id = u.get("primary_email_address_id")
+    email = next(
+        (
+            e.get("email_address")
+            for e in u.get("email_addresses", [])
+            if e.get("id") == primary_id
+        ),
+        None,
+    ) or next(
+        (e.get("email_address") for e in u.get("email_addresses", [])), None
+    )
+    name = " ".join(
+        p for p in (u.get("first_name"), u.get("last_name")) if p
+    ).strip() or u.get("username")
+    return ClerkProfile(
+        email=email.lower() if email else None,
+        full_name=name or None,
+        avatar_url=u.get("image_url") or None,
+    )

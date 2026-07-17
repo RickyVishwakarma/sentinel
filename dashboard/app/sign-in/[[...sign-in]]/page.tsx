@@ -24,7 +24,8 @@ export default function SignInPage() {
           ®
         </sup>
       </Link>
-      <SignIn appearance={clerkAppearance} />
+      {/* Land in the control plane, not back on the marketing page. */}
+      <SignIn appearance={clerkAppearance} fallbackRedirectUrl="/overview" />
     </div>
   );
 }

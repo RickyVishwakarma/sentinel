@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import current_user, verify_password
-from app.clerk import ClerkError, clerk_enabled, verify_session_token
+from app.clerk import ClerkError, clerk_enabled, fetch_profile, verify_session_token
 from app.db import get_db
 from app.models import AuditLog, Tenant, User
 from app.schemas import LoginRequest
@@ -66,13 +66,15 @@ def clerk_exchange(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
 
     clerk_user_id = claims["sub"]
-    # Clerk only includes email when the JWT template adds it; fall back to a
-    # stable synthetic address so the row is still unique and identifiable.
+    # Session tokens carry only `sub` unless a JWT template adds more, so ask
+    # Clerk for the real identity. Synthetic values are a last resort.
+    profile = fetch_profile(clerk_user_id)
     email = (
-        claims.get("email")
-        or claims.get("primary_email_address")
+        profile.email
+        or claims.get("email")
         or f"{clerk_user_id}@clerk.local"
     ).lower()
+    display_name = profile.full_name or email.split("@")[0]
 
     user = db.query(User).filter(User.clerk_user_id == clerk_user_id).first()
     if user is None:
@@ -81,7 +83,7 @@ def clerk_exchange(
         user = db.query(User).filter(User.email == email).first()
 
     if user is None:
-        tenant = Tenant(id=uuid.uuid4().hex, name=email.split("@")[0], plan="free")
+        tenant = Tenant(id=uuid.uuid4().hex, name=f"{display_name}'s workspace", plan="free")
         db.add(tenant)
         db.flush()
         user = User(
@@ -95,6 +97,15 @@ def clerk_exchange(
         action = "auth.clerk_provision"
     else:
         action = "auth.clerk_login"
+        # Heal rows provisioned before the profile lookup existed (or if the
+        # person changed their email/name in Clerk since last sign-in).
+        if profile.email and user.email != profile.email:
+            user.email = profile.email
+        tenant = db.get(Tenant, user.tenant_id)
+        if tenant and (
+            tenant.name.startswith("user_") or tenant.name.endswith("@clerk.local")
+        ):
+            tenant.name = f"{display_name}'s workspace"
 
     user.clerk_user_id = clerk_user_id
     db.add(
@@ -108,6 +119,8 @@ def clerk_exchange(
     return {
         "api_key": user.api_key,
         "email": user.email,
+        "name": display_name,
+        "avatar_url": profile.avatar_url,
         "role": user.role,
         "tenant_id": user.tenant_id,
         "tenant": user.tenant.name,
