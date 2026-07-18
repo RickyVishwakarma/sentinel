@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/lib/auth";
+import { useAuth as useClerkAuth } from "@clerk/nextjs";
 import { LandingShell } from "@/components/landing-chrome";
 import "./landing.css";
+import "./home.css";
 
 /* Minimal black-and-white landing. All styling lives in ./landing.css —
    no Tailwind utilities here, per the design spec. */
@@ -144,14 +145,143 @@ function TrustedBy() {
   );
 }
 
+const FLOW = [
+  {
+    n: "01",
+    title: "The agent asks first",
+    body: "Before running a high-risk tool, your agent calls the decision point — one HTTP request. Works with LangChain, CrewAI, MCP, or plain code.",
+  },
+  {
+    n: "02",
+    title: "Policy decides",
+    body: "Declarative per-tool rules — a glob plus a condition on the arguments — evaluate by priority. First match wins; unmatched calls fall through to your default.",
+  },
+  {
+    n: "03",
+    title: "You get a verdict",
+    body: "Allow, deny, or hold for a human — every decision recorded in an immutable audit log with who, what, and why.",
+  },
+];
+
+const FEATURES = [
+  ["Full traces", "Every run is a span tree — prompt, guardrails, model, cost — PII-redacted at rest."],
+  ["Guardrails", "PII redaction and prompt-injection blocking before the model, leak-blocking after."],
+  ["Provider fallback", "Anthropic → OpenAI → Gemini. Kill the primary and the run still completes."],
+  ["Cost attribution", "Spend per tenant and per agent, with a monthly cap: block, warn, or degrade."],
+  ["Kill switch", "Freeze an agent and every action it attempts is denied instantly. No redeploy."],
+  ["Eval CI gate", "Score faithfulness and guardrail-pass-rate; block prompt regressions before they ship."],
+];
+
+function HowItWorks() {
+  return (
+    <section className="snl-section">
+      <span className="snl-kicker">How it works</span>
+      <h2 className="snl-h2">
+        Ask before <span className="serif">acting</span>.
+      </h2>
+      <p className="snl-lede">
+        Sentinel sits between your agent and the things it can do. Three steps stand between an
+        agent&apos;s intent and a real side effect.
+      </p>
+      <div className="snl-flow">
+        {FLOW.map((s) => (
+          <div className="snl-flow-card" key={s.n}>
+            <span className="snl-flow-num">{s.n}</span>
+            <h3 className="snl-flow-title">{s.title}</h3>
+            <p className="snl-flow-body">{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Verdicts() {
+  return (
+    <section className="snl-section" style={{ paddingTop: 0 }}>
+      <span className="snl-kicker">The contract</span>
+      <h2 className="snl-h2">Three verdicts, one endpoint.</h2>
+      <div className="snl-verdicts">
+        <div className="snl-vcard">
+          <span className="snl-verdict snl-verdict--allow">ALLOW</span>
+          <p className="snl-vbody">No policy blocked it. The agent proceeds and the action is logged.</p>
+        </div>
+        <div className="snl-vcard">
+          <span className="snl-verdict snl-verdict--deny">DENY</span>
+          <p className="snl-vbody">
+            A policy — or the kill switch — forbids it. The agent is told it may not proceed.
+          </p>
+        </div>
+        <div className="snl-vcard">
+          <span className="snl-verdict snl-verdict--hold">HOLD</span>
+          <p className="snl-vbody">
+            It crosses a line a human should see. The action waits in the approval queue.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Features() {
+  return (
+    <section className="snl-section" style={{ paddingTop: 0 }}>
+      <span className="snl-kicker">Under the hood</span>
+      <h2 className="snl-h2">
+        On top of a full <span className="serif">gateway</span>.
+      </h2>
+      <p className="snl-lede">
+        The decision point rides on everything you already need to run agents in production.
+      </p>
+      <div className="snl-features">
+        {FEATURES.map(([title, body]) => (
+          <div className="snl-feature" key={title}>
+            <h3>{title}</h3>
+            <p>{body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ClosingBand({ href, label }: { href: string; label: string }) {
+  return (
+    <section className="snl-section" style={{ paddingTop: 0 }}>
+      <div className="snl-band">
+        <h2>Govern your agents today.</h2>
+        <p>
+          Open source and self-hostable. One endpoint stands between your agent and a mistake it
+          can&apos;t take back.
+        </p>
+        <Link href={href} className="snl-band-btn">
+          {label} →
+        </Link>
+        <pre className="snl-band-code">
+{`POST /v1/agents/{id}/actions/check
+{ "tool": "refund", "arguments": { "amount": 5000 } }
+
+→ { "decision": "pending", "reason": "refunds over $100 need a human" }`}
+        </pre>
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
-  const { session } = useAuth();
-  const cta = session ? "/overview" : "/login";
-  const ctaLabel = session ? "Open dashboard" : "Start governing";
+  // Signed-in visitors can browse the homepage freely; the CTAs (and the nav)
+  // just switch to point at the dashboard instead of sign-up.
+  const { isSignedIn } = useClerkAuth();
+  const cta = isSignedIn ? "/overview" : "/sign-up";
+  const ctaLabel = isSignedIn ? "Open dashboard" : "Start governing";
 
   return (
     <LandingShell>
       <Hero cta={cta} ctaLabel={ctaLabel} />
+      <HowItWorks />
+      <Verdicts />
+      <Features />
+      <ClosingBand href={cta} label={ctaLabel} />
       <TrustedBy />
     </LandingShell>
   );

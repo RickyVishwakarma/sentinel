@@ -28,9 +28,7 @@ function Navbar({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => voi
         </Link>
         <div className="snl-nav-actions">
           <Show when="signed-out">
-            <Link href="/sign-in" className="snl-nav-link">
-              Sign in
-            </Link>
+            {/* One way in — Clerk's sign-up page cross-links to sign-in. */}
             <Link href="/sign-up" className="snl-nav-cta">
               Start governing
             </Link>
@@ -74,8 +72,8 @@ function Drawer({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => voi
           ),
         )}
         <Show when="signed-out">
-          <Link href="/sign-in" onClick={() => setOpen(false)}>
-            Sign in
+          <Link href="/sign-up" onClick={() => setOpen(false)}>
+            Start governing
           </Link>
         </Show>
         <Show when="signed-in">
