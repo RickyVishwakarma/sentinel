@@ -14,11 +14,14 @@ from app.config import get_settings
 
 _settings = get_settings()
 
-# PaaS hosts (Render, Heroku) hand out postgres:// URLs; SQLAlchemy needs an
-# explicit driver scheme.
+# PaaS hosts hand out bare postgres:// (Heroku) or postgresql:// (Render) URLs.
+# A bare postgresql:// makes SQLAlchemy default to the psycopg2 driver, which we
+# don't ship — we ship psycopg v3. Pin both schemes to the +psycopg driver.
 _db_url = _settings.database_url
-if _db_url.startswith("postgres://"):
-    _db_url = _db_url.replace("postgres://", "postgresql+psycopg://", 1)
+for _scheme in ("postgresql://", "postgres://"):
+    if _db_url.startswith(_scheme):
+        _db_url = "postgresql+psycopg://" + _db_url[len(_scheme):]
+        break
 
 _is_sqlite = _db_url.startswith("sqlite")
 
@@ -77,7 +80,9 @@ def _apply_mini_migrations() -> None:
             ("password_hash", "VARCHAR"),
             ("clerk_user_id", "VARCHAR"),
         ],
-        "agents": [("frozen", "BOOLEAN DEFAULT 0")],
+        # DEFAULT false (not 0) — Postgres rejects an integer default on BOOLEAN;
+        # SQLite (>=3.23) accepts the false/true keywords too.
+        "agents": [("frozen", "BOOLEAN DEFAULT false")],
         "approvals": [
             ("kind", "VARCHAR DEFAULT 'output'"),
             ("tool", "VARCHAR"),

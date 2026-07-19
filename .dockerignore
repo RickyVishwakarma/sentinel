@@ -1,0 +1,23 @@
+# The gateway image only needs app/, cli/, evals/, scripts/ + requirements.txt.
+# Keep the build context tiny (and off the dashboard/venv/git).
+.git
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+.pytest_cache
+.mypy_cache
+
+# frontend — not part of the gateway image
+dashboard
+docs
+
+# misc
+*.log
+.DS_Store
