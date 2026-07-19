@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-/** Client for the Sentinel gateway. Key + URL live in localStorage so the
- *  dashboard is a pure static frontend against any gateway instance. */
+/** Client for the Sentinel gateway. The base URL comes from the build-time
+ *  env var NEXT_PUBLIC_API_URL (set on Vercel to the deployed gateway), and
+ *  falls back to localhost for local dev. A localStorage override still wins,
+ *  so you can point the same build at any gateway from the browser. */
 
-export const DEFAULT_URL = "http://localhost:8000";
+export const DEFAULT_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const DEFAULT_KEY = "sentinel-demo-key";
 
 export function apiUrl(): string {
