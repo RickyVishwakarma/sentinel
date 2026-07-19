@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth as useClerkAuth } from "@clerk/nextjs";
 import { LandingShell } from "@/components/landing-chrome";
+import { StatsSection } from "@/components/stats-section";
 import "./landing.css";
 import "./home.css";
 
@@ -278,6 +279,7 @@ export default function Landing() {
   return (
     <LandingShell>
       <Hero cta={cta} ctaLabel={ctaLabel} />
+      <StatsSection />
       <HowItWorks />
       <Verdicts />
       <Features />
