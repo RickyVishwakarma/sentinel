@@ -1,287 +1,243 @@
-# Sentinel — action governance for AI agents
+<p align="center">
+  <img src="docs/banner.svg" alt="Sentinel — the approval layer for AI agents that take action" width="100%" />
+</p>
 
-**The approval layer for agents that *do things*.** Your agent can now spend
-money, touch prod, and email customers — with no kill-switch and no paper trail.
-Sentinel puts every high-risk tool call through policy before it runs:
-**allow**, **deny**, or **hold for a human** — all audited.
+<p align="center">
+  <img src="https://img.shields.io/badge/tests-38%20passing-17c964" alt="tests" />
+  <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="python" />
+  <img src="https://img.shields.io/badge/FastAPI-009688" alt="fastapi" />
+  <img src="https://img.shields.io/badge/Next.js-16-0A0A0A" alt="next.js" />
+  <img src="https://img.shields.io/badge/status-MVP-6b6b6b" alt="status" />
+</p>
+
+# Sentinel
+
+**The approval layer for AI agents that *do things*.**
+
+An agent can now spend money, delete records, and email customers. Sentinel puts
+every high-risk tool call through policy **before it runs** — **allow**, **deny**,
+or **hold for a human** — and writes it all to an audit log.
 
 ```
-agent: "I want to call refund(amount=5000)"
-  → Sentinel evaluates your policies
-  → refund over $100 requires approval → HELD
-  → a human approves or denies → audited → the agent proceeds (or doesn't)
+agent → refund(amount = 5000)
+      → Sentinel checks your policies
+      → "refunds over $100 need a human"  →  HELD
+      → a person approves or denies       →  audited  →  the agent proceeds (or doesn't)
 ```
-
-The policy decision point sits on top of a full **AI gateway**: every LLM call
-is traced, guarded (PII redaction, prompt-injection blocking), cost-attributed,
-and provider-fallback'd, with an eval CI gate for prompt regressions.
-
-### Action governance (the wedge)
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/agents/{id}/actions/check` | The PDP: agent asks before a tool call → `allow` / `deny` / `pending` |
-| `GET /v1/actions/{id}` | Poll a held action until a human decides |
-| `GET/POST/DELETE /v1/policies` | Declarative per-tool rules (glob + condition → effect) |
-| `POST /v1/agents/{id}/freeze` · `/unfreeze` | Kill switch — a frozen agent denies every action |
-
-A policy is `{tool: "refund", condition: {field: "amount", op: "gt", value: 100},
-effect: "require_approval"}`. Rules evaluate by priority; first match wins; every
-decision lands in the audit log.
 
 ---
 
-## See it work
+## How it works
 
-One command runs a real agent through the whole thing — its *thinking* goes
-through the gateway (traced, guarded, priced), its *actions* go through the PDP:
+```mermaid
+flowchart LR
+    A["🤖 Agent wants<br/>to run a tool"] --> B{Policy check}
+    B -->|no rule matched| C["✅ ALLOW<br/>runs"]
+    B -->|deny rule| D["⛔ DENY<br/>blocked"]
+    B -->|needs approval| E["⏸️ HOLD<br/>waits for a human"]
+    E -->|approve| C
+    E -->|deny| D
+    C --> F[("📋 Audit log")]
+    D --> F
+    E --> F
+```
+
+Policies are declarative — a tool glob plus an optional condition on the call's
+arguments — evaluated by priority, first match wins:
+
+```json
+{ "tool": "delete_*", "effect": "deny", "priority": 10 }
+{ "tool": "refund", "priority": 20,
+  "condition": { "field": "amount", "op": "gt", "value": 100 },
+  "effect": "require_approval" }
+```
+
+A **kill switch** freezes an agent so every action it attempts is denied instantly.
+
+---
+
+## See it work (30 seconds)
+
+One command runs a **real Gemini agent** through all three verdicts:
 
 ```bash
 python -m examples.governed_agent --auto-approve
 ```
 
 ```
-[1/3] A customer is asking where order 1234 is. Look it up.
-  thinking via gemini · trace 925543be63f6… · $0.00021
+[1/3] Where is order 1234?
   agent decided: check_order_status(order_id='1234')
-  sentinel:      ALLOW — default allow
+  sentinel:      ALLOW — no policy matched
   executed:      Order 1234 shipped — arriving Tuesday.
 
 [2/3] Customer 88 asked to be forgotten. Remove their record.
   agent decided: delete_customer(customer_id='88')
   sentinel:      DENY — never delete anything
-  not executed — the agent is told it may not proceed.
+  not executed.
 
-[3/3] Acme was double-charged $5000 on a bad invoice. Make them whole.
+[3/3] Acme was double-charged $5000. Make them whole.
   agent decided: refund(amount=5000, customer='Acme')
   sentinel:      HELD — big refunds need a human
   human:         APPROVED
   executed:      Refunded $5000 to Acme.
-
-Audit trail (newest first)
-  action.approve     refund
-  action.hold        refund
-  action.deny        delete_customer
-  action.allow       check_order_status
 ```
 
-Drop `--auto-approve` and the held refund waits for you to decide in the
-dashboard's **Approvals** page. [`examples/governed_agent.py`](examples/governed_agent.py)
-is also the integration example — it's plain HTTP and imports nothing from the
-app, so it's exactly how *your* agent wires in.
+Drop `--auto-approve` and the refund waits for you in the dashboard's **Approvals**
+page. [`examples/governed_agent.py`](examples/governed_agent.py) is plain HTTP and
+imports nothing from the app — it's exactly how *your* agent wires in.
 
 ---
 
-## Quickstart (no API keys, no Docker)
+## Quickstart
+
+**1. Backend + demo** (no API keys, no Docker needed):
 
 ```bash
-python -m venv .venv && . .venv/Scripts/activate   # Windows
-#   source .venv/bin/activate                       # macOS / Linux
+python -m venv .venv && source .venv/Scripts/activate   # Windows
+#   source .venv/bin/activate                            # macOS / Linux
 pip install -r requirements.txt
 
-python -m app.seed                                  # creates demo tenant + admin login
-uvicorn app.main:app --reload                       # http://localhost:8000/docs
+python -m app.seed              # demo tenant + API key: sentinel-demo-key
+uvicorn app.main:app --reload   # http://localhost:8000/docs
 ```
 
-Then start the dashboard and sign in:
+With no `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` set, the gateway
+runs on a **deterministic template provider** — the whole pipeline works out of the
+box. Add a key to `.env` and the fallback chain prefers the real model automatically.
+
+**2. Dashboard**:
 
 ```bash
-cd dashboard && npm install && npm run dev          # http://localhost:3000
-# sign in:  admin@sentinel.dev  /  sentinel123
+cd dashboard && npm install && npm run dev   # http://localhost:3000
 ```
 
-No agents are pre-created — register your own from the **Agents** page, then send
-it a message from the playground. Humans log in with email/password; the API key
-(`sentinel-demo-key`) remains the machine-to-machine credential for curl.
-
-With no `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` set, the gateway
-runs entirely on a **deterministic template provider**, so the full pipeline —
-guardrails, traces, cost, evals — works out of the box. Add a key to `.env` and
-the fallback chain will prefer the real provider automatically.
-
-### Run an agent
-
-```bash
-curl -s -X POST localhost:8000/v1/agents/<AGENT_ID>/run \
-  -H "Authorization: Bearer sentinel-demo-key" \
-  -H "Content-Type: application/json" \
-  -d '{"input": "How do I reset my password?"}'
-```
-
-Response includes the output, the serving `provider`, `total_tokens`, `cost`, and
-a `trace_id`. Open the trace:
-
-```bash
-curl -s localhost:8000/v1/traces/<TRACE_ID> \
-  -H "Authorization: Bearer sentinel-demo-key"
-```
+Humans sign in with **Clerk** (Google / GitHub / email). Machines keep using the
+API key. *(A fresh clone needs your own Clerk keys in `dashboard/.env.local` — run
+`clerk init` or add them by hand.)*
 
 ---
 
-## The gateway pipeline
+## What's inside
 
-Every run flows through one fixed pipeline ([`app/gateway.py`](app/gateway.py)):
+| | |
+|---|---|
+| 🎯 **Action governance** | Policy decision point · approval queue · kill switch · audit log |
+| 🚪 **AI gateway** | One entrypoint for every agent run |
+| 🛡️ **Guardrails** | PII redaction · prompt-injection blocking · secret-leak blocking |
+| 🔀 **Provider fallback** | Anthropic → OpenAI → Gemini → template (kill the primary, run still completes) |
+| 📊 **Observability** | Full trace tree per run, PII-redacted at rest, 30-day retention |
+| 💸 **Cost attribution** | Per-tenant / per-agent spend + monthly caps (block / warn / degrade) |
+| ✅ **Eval CI gate** | Score prompts; block regressions before they ship |
+| 🌊 **Streaming** | SSE with incremental guardrails |
+| 👥 **Multi-tenant** | RBAC (`admin` / `dev` / `viewer`) + row-level isolation |
 
-```
-auth → rate-limit → cost-cap → load agent version → guardrails(pre)
-  → LLM call + provider fallback → guardrails(post) → cost calc → emit trace
-```
-
-- **Guardrails (pre):** PII redaction, prompt-injection / jailbreak detection, tool allow-list.
-- **Guardrails (post):** secret-leak blocklist, optional JSON-schema check.
-- **Fallback:** tries the agent's `fallback_chain` (e.g. `anthropic → openai → gemini`),
-  skipping unconfigured providers and erroring providers, and **always** ends on the
-  template provider — so "kill the primary, the run still succeeds" holds.
-- **Trace writes are async of the response** — spans are buffered and flushed after
-  the call returns, never blocking it.
+---
 
 ## API surface
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/v1/agents` | Create an agent (v1) |
-| GET  | `/v1/agents` | List agents |
-| POST | `/v1/agents/{id}/versions` | New immutable version |
-| POST | `/v1/agents/{id}/run` | Run — returns output + `trace_id` |
-| POST | `/v1/agents/{id}/run/stream` | Streaming run (SSE): `meta → provider → delta* → [blocked] → done` |
-| GET  | `/v1/runs/{id}` | Run + full trace tree |
-| GET  | `/v1/traces/{trace_id}` | Trace by id |
-| POST | `/v1/evals/run` | Run an eval set (used by CI) |
-| GET  | `/v1/approvals` | HITL queue (flagged runs holding output) |
-| POST | `/v1/approvals/{id}/decide` | Approve / deny a held run (admin) |
-| GET  | `/v1/cost?from=&to=` | Cost per agent for the tenant |
-| GET  | `/v1/audit` | Audit log |
+| `POST` | `/v1/agents/{id}/actions/check` | **The decision point** → `allow` / `deny` / `pending` |
+| `GET`  | `/v1/actions/{id}` | Poll a held action until decided |
+| `GET/POST/DELETE` | `/v1/policies` | Manage per-tool rules |
+| `POST` | `/v1/agents/{id}/freeze` · `/unfreeze` | Kill switch |
+| `POST` | `/v1/agents/{id}/run` · `/run/stream` | Run an agent (buffered or SSE) |
+| `GET`  | `/v1/runs/{id}` · `/v1/traces/{trace_id}` | Trace tree |
+| `GET`  | `/v1/approvals` · `POST /decide` | Human-in-the-loop queue |
+| `POST` | `/v1/evals/run` | Eval set (used by CI) |
+| `GET`  | `/v1/cost` · `/v1/audit` | Cost + audit log |
 
-Auth is `Authorization: Bearer <api_key>`; RBAC roles are `admin | dev | viewer`.
-Every relational row carries a `tenant_id`, enforced from the API key (never the
-query string).
+Full interactive docs at **`/docs`**. Auth: `Authorization: Bearer <api_key>`.
 
-## Eval CI gate
+---
 
-```bash
-python -m cli.eval_runner \
-  --url http://localhost:8000 \
-  --api-key sentinel-demo-key \
-  --agent-id <AGENT_ID> \
-  --file evals/support-bot.json
-```
+## The dashboard
 
-Scores `answer_relevance`, `faithfulness`, and `guardrail_pass_rate`; exits
-non-zero if any metric drops below the baseline. Wired into
-[`.github/workflows/eval-gate.yml`](.github/workflows/eval-gate.yml) so a prompt
-change that regresses fails the build.
+A Next.js console over the gateway: **Overview · Runs · Agents** (with a live
+streaming playground) **· Policies · Approvals · Evals · Cost · Audit** — plus a
+black-and-white marketing site (landing, product, pricing, FAQ, contact).
 
-## Dashboard
+<!-- Add screenshots to docs/screenshots/ and they'll show here (see that folder's README) -->
 
-A Next.js console over the gateway — run list with metrics, expandable trace
-tree per run, an agents playground (fire runs from the browser), cost
-attribution with cap usage, and the audit log.
+| Landing | Dashboard |
+|---|---|
+| ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+| **Trace tree** | **Approvals** |
+| ![Trace](docs/screenshots/trace.png) | ![Approvals](docs/screenshots/approvals.png) |
+
+---
+
+## Testing
 
 ```bash
-cd dashboard
-npm install
-npm run dev        # http://localhost:3000 (gateway URL + API key configurable in the top bar)
+pytest -q                                   # 38 tests
+
+python -m cli.eval_runner \                 # the CI gate — exits non-zero on regression
+  --url http://localhost:8000 --api-key sentinel-demo-key \
+  --agent-id <AGENT_ID> --file evals/support-bot.json
 ```
 
-## Tests
-
-```bash
-pytest -q
-```
-
-## Production-shaped infra (optional)
-
-The default backends are SQLite + in-memory span store + in-memory rate limiter.
-To exercise the PRD's three-store architecture:
+<details>
+<summary><b>Production infra (optional)</b> — swap SQLite for Postgres + Mongo + Redis</summary>
 
 ```bash
 docker compose up -d      # host ports 5433 (pg) / 27017 (mongo) / 6380 (redis)
 export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5433/sentinel
 export SPAN_STORE=mongo   MONGO_URL=mongodb://localhost:27017
 export RATE_LIMITER=redis REDIS_URL=redis://localhost:6380/0
-# pip install "psycopg[binary]" pymongo redis
+pip install "psycopg[binary]" pymongo redis
 ```
 
-Verified end-to-end: runs land in Postgres, spans are served from Mongo, and
-the per-tenant rate-limit window lives in Redis.
+Each swap is a config change — no code changes. Verified end-to-end: runs land in
+Postgres, spans served from Mongo, rate-limit window in Redis.
+</details>
 
-Each swap is a config change — no code changes. See [`.env.example`](.env.example).
+<details>
+<summary><b>Architecture</b></summary>
 
-## What's here vs. the full PRD
+```mermaid
+flowchart TB
+    subgraph client [Your agent]
+      T[thinking] & X[actions]
+    end
+    T -->|/run| GW[Gateway pipeline]
+    X -->|/actions/check| PDP[Policy decision point]
+    GW --> G[Guardrails] --> P[Anthropic → OpenAI → Gemini → template]
+    PDP --> POL[(Policies)]
+    PDP --> Q[Approval queue]
+    GW --> TR[(Traces)]
+    GW & PDP --> AU[(Audit log)]
+```
 
-**Built (Weeks 1–3):** Agent Registry with immutable versioning · Gateway
-(routing, provider fallback, rate-limit, cost-cap) · Guardrails (pre + post) ·
-Observability (spans + trace tree) · Eval harness + CI gate (+ LLM-judge metric
-when an Anthropic key is set) · Governance (RBAC + audit log + HITL approval
-queue) · Cost attribution · Next.js dashboard (runs, trace view, playground,
-approvals, cost, audit) · Load test (`python -m scripts.load_test` — gateway
-overhead p95 ≈ 24 ms vs the < 50 ms PRD target, concurrency 20, SQLite/WAL).
+Every run flows through one fixed pipeline
+([`app/gateway.py`](app/gateway.py)):
+`auth → rate-limit → cost-cap → guardrails(pre) → LLM + fallback → guardrails(post) → cost → trace`.
+Trace writes are async of the response, so persistence never blocks a call.
+</details>
 
-## PRD open questions — answers implemented
-
-**Q2 — cost cap hit mid-month.** The policy belongs to the **tenant admin**
-(`PATCH /v1/tenant`, admin role): `cost_cap_mode` is `block` (402 on every
-further run — default), `warn` (runs proceed; every response and the audit log
-carry a `cost_cap` warning), or `degrade` (runs proceed on the free template
-provider only). Every mode writes an audit entry.
-
-**Q3 — trace retention & PII at rest.** Span inputs/outputs are PII-redacted
-**before persistence** (`REDACT_SPANS_AT_REST`, on by default — the live
-response is unaffected; only the stored copy is scrubbed). Spans older than
-`TRACE_RETENTION_DAYS` (default 30) are deleted by a startup sweep and by
-`POST /v1/admin/traces/purge`; runs are kept as billing records.
-
-**Q4 — path to enterprise readiness.** Not a v1 code problem; the sequencing
-is: (1) SSO/OIDC in front of the existing RBAC — API keys stay for
-machine-to-machine, humans get SSO via the dashboard; (2) SOC 2 — the audit
-log, retention policy, and RBAC built here are the control evidence, so the
-work is process + an auditor, not architecture; (3) multi-region — the gateway
-is stateless (Postgres/Mongo/Redis hold all state), so region expansion is a
-deployment topology change (regional gateway + read replicas) rather than a
-rewrite. Becomes gating at the first enterprise design partner, not before.
-
-## Streaming and guardrails (PRD open question Q1)
-
-`POST /v1/agents/{id}/run/stream` answers Q1 like this:
-
-- **Pre-call guardrails run before any token is emitted** — a blocked input
-  returns a plain JSON block response; no stream opens.
-- **Post-call guardrails run incrementally** over the accumulated output while
-  the last 96 chars are withheld from emission. When a leak pattern completes,
-  the stream is cut and the withheld tail is never sent. This is best-effort by
-  construction (a pattern longer than the hold window can partially escape), so
-  the full post-pass is still recorded on the trace and audit log with
-  `chars_emitted` for exposure accounting.
-- **HITL and streaming don't compose** — you can't un-send tokens — so agents
-  with `hitl_approval` get a 409 on the stream endpoint and must use the
-  buffered endpoint.
-
-## HITL approval queue
-
-Flag-level guardrail hits (e.g. PII redaction) on an agent with the
-`hitl_approval` guardrail enabled complete the LLM call but **withhold the
-output**: the run returns `status: pending_approval` plus an `approval_id`, and
-the output sits in the queue until an admin approves (run becomes `ok`, output
-released) or denies it. Decide from the dashboard's **Approvals** page or via
-`POST /v1/approvals/{id}/decide`.
-
-## Layout
+<details>
+<summary><b>Project layout</b></summary>
 
 ```
 app/
-  main.py            FastAPI app + router wiring
-  gateway.py         the request pipeline
-  config.py db.py    settings + SQLAlchemy
-  models.py          tenant, user, agent, agent_version, run, span, audit, eval_result
-  auth.py            API-key auth + RBAC
-  cost.py            token → USD pricing
-  ratelimit.py       in-memory / Redis limiter
-  spans.py           SQL / Mongo span store
-  guardrails/        pre.py, post.py
-  providers/         anthropic, openai, gemini, template, fallback pipeline
-  evals.py           eval harness
-  routers/           agents, runs, evals, cost, audit
-cli/eval_runner.py   CI regression gate
-tests/               guardrail unit tests + gateway E2E
-dashboard/           Next.js console: runs, trace tree, playground, cost, audit
+  gateway.py         the request pipeline          policy.py     the rules engine
+  models.py          tenants · agents · runs …      clerk.py      Clerk session verify
+  guardrails/        pre.py, post.py                providers/    anthropic/openai/gemini/template
+  routers/           agents, actions, approvals, runs, evals, cost, audit, tenant, auth …
+cli/eval_runner.py   CI regression gate            examples/governed_agent.py   the demo
+scripts/load_test.py load test                     tests/        38 tests
+dashboard/           Next.js console + marketing site
 ```
+</details>
+
+---
+
+## Status & honesty
+
+Sentinel is an **early, open-source MVP** — a real, working system, not a hardened
+product. What that means: 38 tests pass and the full flow works against live Gemini,
+but the guardrails are regex heuristics (not ML), there are no production users, and
+it isn't deployed to a public URL yet (`render.yaml` is ready). The numbers in the
+app describe what the control plane guarantees *by design*, not traction.
+
+**License:** MIT recommended (add a `LICENSE` file).
