@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/FastAPI-009688" alt="fastapi" />
   <img src="https://img.shields.io/badge/Next.js-16-0A0A0A" alt="next.js" />
   <img src="https://img.shields.io/badge/status-MVP-6b6b6b" alt="status" />
+  <img src="https://img.shields.io/badge/license-MIT-0A0A0A" alt="license" />
 </p>
 
 # Sentinel
@@ -240,4 +241,4 @@ but the guardrails are regex heuristics (not ML), there are no production users,
 it isn't deployed to a public URL yet (`render.yaml` is ready). The numbers in the
 app describe what the control plane guarantees *by design*, not traction.
 
-**License:** MIT recommended (add a `LICENSE` file).
+**License:** [MIT](LICENSE) © 2026 Ricky Vishwakarma.
